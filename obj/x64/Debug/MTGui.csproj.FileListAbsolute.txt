@@ -1,0 +1,11 @@
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\bin\Debug\MTGui.deps.json
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\bin\Debug\MTGui.dll
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\bin\Debug\JetBrains.Annotations.dll
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.csproj.AssemblyReference.cache
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.AssemblyInfoInputs.cache
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.AssemblyInfo.cs
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.csproj.CoreCompileInputs.cache
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.sourcelink.json
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.csproj.Up2Date
+C:\Users\Virux\FFXIVWorkspace\Kaleidoscope\MTGui\obj\x64\Debug\MTGui.dll

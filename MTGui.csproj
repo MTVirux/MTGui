@@ -1,0 +1,26 @@
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+    <PropertyGroup>
+        <RootNamespace>MTGui</RootNamespace>
+        <AssemblyName>MTGui</AssemblyName>
+        <FileVersion>1.0.0.0</FileVersion>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <Product>MTGui</Product>
+        <Description>Modular ImGui/ImPlot widget library for Dalamud plugins</Description>
+        <Copyright>Copyright © 2025</Copyright>
+        <WarningLevel>4</WarningLevel>
+        <OutputPath>bin\$(Configuration)\</OutputPath>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Use_DalamudPackager>false</Use_DalamudPackager>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
+        <Reference Include="Dalamud.Bindings.ImGui" Private="false" />
+    </ItemGroup>
+</Project>
