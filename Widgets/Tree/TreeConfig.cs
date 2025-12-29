@@ -9,7 +9,7 @@ namespace MTGui.Tree;
 /// <param name="SpanFullWidth">Whether the node spans the full available width.</param>
 /// <param name="ShowBulletForLeaf">Whether to show a bullet instead of an arrow for nodes without children.</param>
 /// <param name="IndentSize">Indent size in pixels for child nodes.</param>
-public sealed record TreeNodeConfig(
+public sealed record MTTreeNodeConfig(
     bool DefaultOpen = false,
     bool OpenOnLabelClick = true,
     bool IsLeaf = false,
@@ -22,7 +22,7 @@ public sealed record TreeNodeConfig(
 /// </summary>
 /// <typeparam name="TKey">The type of key that uniquely identifies the node.</typeparam>
 /// <typeparam name="TData">The type of data stored in the node.</typeparam>
-public class TreeNode<TKey, TData> where TKey : notnull
+public class MTTreeNode<TKey, TData> where TKey : notnull
 {
     /// <summary>
     /// Unique identifier for this node.
@@ -42,7 +42,7 @@ public class TreeNode<TKey, TData> where TKey : notnull
     /// <summary>
     /// Child nodes.
     /// </summary>
-    public List<TreeNode<TKey, TData>> Children { get; init; } = [];
+    public List<MTTreeNode<TKey, TData>> Children { get; init; } = [];
     
     /// <summary>
     /// Whether this node has any children.
@@ -64,7 +64,7 @@ public class TreeNode<TKey, TData> where TKey : notnull
 /// State for tracking expanded nodes in a tree.
 /// </summary>
 /// <typeparam name="TKey">The type of key that uniquely identifies nodes.</typeparam>
-public class TreeExpansionState<TKey> where TKey : notnull
+public class MTTreeExpansionState<TKey> where TKey : notnull
 {
     private readonly HashSet<TKey> _expandedNodes = [];
     

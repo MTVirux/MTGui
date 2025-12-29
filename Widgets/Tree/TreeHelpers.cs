@@ -6,7 +6,7 @@ namespace MTGui.Tree;
 /// <summary>
 /// Static helper methods for rendering tree structures in ImGui.
 /// </summary>
-public static class TreeHelpers
+public static class MTTreeHelpers
 {
     /// <summary>
     /// Draws a tree node with standard flags based on configuration.
@@ -15,9 +15,9 @@ public static class TreeHelpers
     /// <param name="config">Node configuration.</param>
     /// <param name="id">Optional unique ID suffix for the node.</param>
     /// <returns>True if the node is open and children should be rendered.</returns>
-    public static bool DrawTreeNode(string label, TreeNodeConfig? config = null, string? id = null)
+    public static bool DrawTreeNode(string label, MTTreeNodeConfig? config = null, string? id = null)
     {
-        config ??= new TreeNodeConfig();
+        config ??= new MTTreeNodeConfig();
         var flags = GetTreeNodeFlags(config);
         
         var fullLabel = id != null ? $"{label}##{id}" : label;
@@ -42,10 +42,10 @@ public static class TreeHelpers
     public static bool DrawTreeNodeWithState<TKey>(
         TKey key,
         string label,
-        TreeExpansionState<TKey> expansionState,
-        TreeNodeConfig? config = null) where TKey : notnull
+        MTTreeExpansionState<TKey> expansionState,
+        MTTreeNodeConfig? config = null) where TKey : notnull
     {
-        config ??= new TreeNodeConfig();
+        config ??= new MTTreeNodeConfig();
         var flags = GetTreeNodeFlags(config);
         
         // Set open state based on our tracking
@@ -76,12 +76,12 @@ public static class TreeHelpers
     /// <param name="nodeRenderer">Optional custom renderer for node content. Called after the node label.</param>
     /// <param name="config">Default node configuration.</param>
     public static void DrawTree<TKey, TData>(
-        IEnumerable<TreeNode<TKey, TData>> nodes,
-        TreeExpansionState<TKey>? expansionState = null,
-        Action<TreeNode<TKey, TData>>? nodeRenderer = null,
-        TreeNodeConfig? config = null) where TKey : notnull
+        IEnumerable<MTTreeNode<TKey, TData>> nodes,
+        MTTreeExpansionState<TKey>? expansionState = null,
+        Action<MTTreeNode<TKey, TData>>? nodeRenderer = null,
+        MTTreeNodeConfig? config = null) where TKey : notnull
     {
-        config ??= new TreeNodeConfig();
+        config ??= new MTTreeNodeConfig();
         
         foreach (var node in nodes)
         {
@@ -90,10 +90,10 @@ public static class TreeHelpers
     }
     
     private static void DrawTreeNodeRecursive<TKey, TData>(
-        TreeNode<TKey, TData> node,
-        TreeExpansionState<TKey>? expansionState,
-        Action<TreeNode<TKey, TData>>? nodeRenderer,
-        TreeNodeConfig config) where TKey : notnull
+        MTTreeNode<TKey, TData> node,
+        MTTreeExpansionState<TKey>? expansionState,
+        Action<MTTreeNode<TKey, TData>>? nodeRenderer,
+        MTTreeNodeConfig config) where TKey : notnull
     {
         var nodeConfig = config with { IsLeaf = !node.HasChildren };
         
@@ -138,9 +138,9 @@ public static class TreeHelpers
     }
     
     /// <summary>
-    /// Converts a TreeNodeConfig to ImGui flags.
+    /// Converts a MTTreeNodeConfig to ImGui flags.
     /// </summary>
-    public static ImGuiTreeNodeFlags GetTreeNodeFlags(TreeNodeConfig config)
+    public static ImGuiTreeNodeFlags GetTreeNodeFlags(MTTreeNodeConfig config)
     {
         var flags = ImGuiTreeNodeFlags.None;
         
