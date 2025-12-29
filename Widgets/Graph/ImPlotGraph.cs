@@ -78,6 +78,11 @@ public class ImPlotGraph
     /// </summary>
     public bool IsMouseOverOverlay { get; private set; }
     
+    /// <summary>
+    /// Gets the set of hidden series names.
+    /// </summary>
+    public IReadOnlySet<string> HiddenSeries => _hiddenSeries;
+    
     #endregion
     
     #region Constructors
