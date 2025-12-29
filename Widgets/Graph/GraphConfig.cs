@@ -123,6 +123,14 @@ public class ImPlotGraphConfig
     public float AutoScrollNowPosition { get; set; } = 75f;
     
     /// <summary>
+    /// Whether to simulate real-time updates by extending the last data point to "now".
+    /// When enabled, the graph will continuously update to show the current time as if 
+    /// the last known data value is still current. This creates a smooth real-time 
+    /// visualization even when data updates are infrequent.
+    /// </summary>
+    public bool SimulateRealTimeUpdates { get; set; } = true;
+    
+    /// <summary>
     /// Style configuration for the graph.
     /// </summary>
     public GraphStyleConfig Style { get; set; } = new();

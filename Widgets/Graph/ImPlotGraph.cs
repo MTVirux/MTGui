@@ -23,6 +23,12 @@ public class ImPlotGraph
     private readonly HashSet<string> _hiddenSeries = new();
     
     /// <summary>
+    /// Set of group names that are currently hidden.
+    /// When a group is hidden, all series belonging to that group are hidden.
+    /// </summary>
+    private readonly HashSet<string> _hiddenGroups = new();
+    
+    /// <summary>
     /// Scroll offset for the inside legend.
     /// </summary>
     private float _insideLegendScrollOffset = 0f;
@@ -54,6 +60,9 @@ public class ImPlotGraph
     private bool _lastAutoScrollEnabled;
     private DateTime _lastPreparedDataTime;
     
+    // === Groups ===
+    private IReadOnlyList<GraphSeriesGroup>? _groups;
+    
     #endregion
     
     #region Events
@@ -82,6 +91,25 @@ public class ImPlotGraph
     /// Gets the set of hidden series names.
     /// </summary>
     public IReadOnlySet<string> HiddenSeries => _hiddenSeries;
+    
+    /// <summary>
+    /// Gets the set of hidden group names.
+    /// </summary>
+    public IReadOnlySet<string> HiddenGroups => _hiddenGroups;
+    
+    /// <summary>
+    /// Gets or sets the groups for the legend. Groups can be toggled to show/hide all their member series.
+    /// </summary>
+    public IReadOnlyList<GraphSeriesGroup>? Groups
+    {
+        get => _groups;
+        set
+        {
+            _groups = value;
+            // Clear cache so groups are included in next prepared data
+            ClearCache();
+        }
+    }
     
     #endregion
     
@@ -148,11 +176,13 @@ public class ImPlotGraph
         else
         {
             data = _cachedPreparedData!;
-            
-            if (_config.AutoScrollEnabled)
-            {
-                UpdateAutoScrollLimits(data);
-            }
+        }
+        
+        // Always update real-time limits when SimulateRealTimeUpdates is enabled
+        // This extends the last data point to "now" for continuous visualization
+        if (_config.SimulateRealTimeUpdates || _config.AutoScrollEnabled)
+        {
+            UpdateRealTimeLimits(data);
         }
         
         DrawGraph(data);
@@ -186,11 +216,13 @@ public class ImPlotGraph
         else
         {
             data = _cachedPreparedData!;
-            
-            if (_config.AutoScrollEnabled)
-            {
-                UpdateAutoScrollLimits(data);
-            }
+        }
+        
+        // Always update real-time limits when SimulateRealTimeUpdates is enabled
+        // This extends the last data point to "now" for continuous visualization
+        if (_config.SimulateRealTimeUpdates || _config.AutoScrollEnabled)
+        {
+            UpdateRealTimeLimits(data);
         }
         
         DrawGraph(data);
@@ -236,6 +268,61 @@ public class ImPlotGraph
     /// Checks if a series is currently hidden.
     /// </summary>
     public bool IsSeriesHidden(string seriesName) => _hiddenSeries.Contains(seriesName);
+    
+    /// <summary>
+    /// Toggles the visibility of a group by name.
+    /// When a group is hidden, all series belonging to that group are hidden.
+    /// </summary>
+    public void ToggleGroupVisibility(string groupName)
+    {
+        if (!_hiddenGroups.Add(groupName))
+        {
+            _hiddenGroups.Remove(groupName);
+        }
+    }
+    
+    /// <summary>
+    /// Shows a group by name, making its series potentially visible
+    /// (they may still be hidden if they belong to another hidden group).
+    /// </summary>
+    public void ShowGroup(string groupName)
+    {
+        _hiddenGroups.Remove(groupName);
+    }
+    
+    /// <summary>
+    /// Hides a group by name, hiding all series that belong to it.
+    /// </summary>
+    public void HideGroup(string groupName)
+    {
+        _hiddenGroups.Add(groupName);
+    }
+    
+    /// <summary>
+    /// Checks if a group is currently hidden.
+    /// </summary>
+    public bool IsGroupHidden(string groupName) => _hiddenGroups.Contains(groupName);
+    
+    /// <summary>
+    /// Checks if a series should be visible based on both direct visibility and group visibility.
+    /// A series is hidden if it's directly hidden OR if any of its groups are hidden.
+    /// </summary>
+    public bool IsSeriesEffectivelyHidden(GraphSeriesData series)
+    {
+        if (_hiddenSeries.Contains(series.Name))
+            return true;
+        
+        if (series.GroupNames is { Count: > 0 })
+        {
+            foreach (var groupName in series.GroupNames)
+            {
+                if (_hiddenGroups.Contains(groupName))
+                    return true;
+            }
+        }
+        
+        return false;
+    }
     
     /// <summary>
     /// Clears the data cache, forcing a full recompute on the next render.
@@ -325,17 +412,17 @@ public class ImPlotGraph
                 ImPlot.SetNextLineStyle(new Vector4(0, 0, 0, 0), 0);
                 ImPlot.PlotLine("##padding", dummyX, dummyY, 2);
                 
-                // Draw each series
+                // Draw each series (check both direct visibility and group visibility)
                 foreach (var series in data.Series)
                 {
-                    if (!series.Visible) continue;
+                    if (!series.Visible || IsSeriesEffectivelyHidden(series)) continue;
                     DrawSeries(series, data);
                 }
                 
                 // Draw current price line for single series
                 if (_config.ShowCurrentPriceLine && !data.HasMultipleSeries)
                 {
-                    var lastVisibleSeries = data.Series.LastOrDefault(s => s.Visible);
+                    var lastVisibleSeries = data.Series.LastOrDefault(s => s.Visible && !IsSeriesEffectivelyHidden(s));
                     if (lastVisibleSeries != null && lastVisibleSeries.PointCount > 0)
                     {
                         var currentValue = lastVisibleSeries.YValues[lastVisibleSeries.PointCount - 1];
@@ -343,10 +430,48 @@ public class ImPlotGraph
                     }
                 }
                 
-                // Draw hover effects
-                if (_config.ShowCrosshair && ImPlot.IsPlotHovered())
+                // Draw value labels first to get their bounds for hover detection
+                List<GraphValueLabels.ValueLabelBounds>? valueLabelBounds = null;
+                var isHoveringValueLabel = false;
+                if (_config.ShowValueLabel)
+                {
+                    valueLabelBounds = DrawValueLabels(data);
+                    
+                    // Check if hovering a value label
+                    if (valueLabelBounds is { Count: > 0 })
+                    {
+                        var mousePos = ImGui.GetMousePos();
+                        foreach (var labelBounds in valueLabelBounds)
+                        {
+                            if (labelBounds.Contains(mousePos))
+                            {
+                                isHoveringValueLabel = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Draw hover effects (only if not hovering a value label)
+                if (_config.ShowCrosshair && ImPlot.IsPlotHovered() && !isHoveringValueLabel)
                 {
                     DrawHoverEffects(data);
+                }
+                
+                // Show value label tooltip if hovering one
+                if (isHoveringValueLabel && valueLabelBounds != null)
+                {
+                    var mousePos = ImGui.GetMousePos();
+                    foreach (var labelBounds in valueLabelBounds)
+                    {
+                        if (labelBounds.Contains(mousePos))
+                        {
+                            var lines = new List<string> { $"{labelBounds.SeriesName}: {FormatUtils.FormatAbbreviated(labelBounds.Value)}" };
+                            var color = new Vector4(labelBounds.Color.X, labelBounds.Color.Y, labelBounds.Color.Z, 1f);
+                            GraphTooltips.DrawTooltipBox(mousePos, lines.ToArray(), color, _config.Style);
+                            break;
+                        }
+                    }
                 }
                 
                 // Draw inside legend if applicable
@@ -355,10 +480,12 @@ public class ImPlotGraph
                     _cachedLegendResult = GraphLegend.DrawInsideLegend(
                         data,
                         _hiddenSeries,
+                        _hiddenGroups,
                         _config.LegendPosition,
                         _config.LegendHeightPercent,
                         _insideLegendScrollOffset,
                         ToggleSeriesVisibility,
+                        ToggleGroupVisibility,
                         _config.Style);
                     _insideLegendScrollOffset = _cachedLegendResult.ScrollOffset;
                 }
@@ -399,12 +526,6 @@ public class ImPlotGraph
                     _cachedControlsResult = GraphControls.ControlsDrawerResult.Invalid;
                 }
                 
-                // Draw value labels
-                if (_config.ShowValueLabel)
-                {
-                    DrawValueLabels(data);
-                }
-                
                 ImPlot.EndPlot();
             }
             
@@ -417,10 +538,13 @@ public class ImPlotGraph
                 GraphLegend.DrawScrollableLegend(
                     _config.PlotId,
                     data.Series,
+                    data.Groups,
                     _hiddenSeries,
+                    _hiddenGroups,
                     _config.LegendWidth,
                     avail.Y,
                     ToggleSeriesVisibility,
+                    ToggleGroupVisibility,
                     _config.Style);
             }
         }
@@ -461,6 +585,10 @@ public class ImPlotGraph
                     ImPlot.PlotBars(series.Name, xPtr, yPtr, count, barWidth);
                     break;
                     
+                case GraphType.StairsArea:
+                    DrawStairsArea(series, data, colorVec4, xPtr, yPtr, count);
+                    break;
+                    
                 case GraphType.Area:
                 default:
                     var fillAlpha = data.HasMultipleSeries ? _config.Style.MultiSeriesFillAlpha : _config.Style.FillAlpha + 0.25f;
@@ -474,7 +602,52 @@ public class ImPlotGraph
     }
     
     /// <summary>
+    /// Draws a stairs/step chart with filled area below the line.
+    /// Creates step-shaped data for the shaded region to match the stairs line.
+    /// </summary>
+    private unsafe void DrawStairsArea(GraphSeriesData series, PreparedGraphData data, Vector4 colorVec4, double* xPtr, double* yPtr, int count)
+    {
+        if (count < 2)
+        {
+            ImPlot.PlotStairs(series.Name, xPtr, yPtr, count);
+            return;
+        }
+        
+        // Create expanded arrays for stair-shaped shading
+        // Each original point becomes 2 points (except the last one)
+        // Pattern: (x0,y0), (x1,y0), (x1,y1), (x2,y1), (x2,y2), ...
+        var expandedCount = count * 2 - 1;
+        var expandedX = new double[expandedCount];
+        var expandedY = new double[expandedCount];
+        
+        for (var i = 0; i < count - 1; i++)
+        {
+            var idx = i * 2;
+            expandedX[idx] = xPtr[i];
+            expandedY[idx] = yPtr[i];
+            expandedX[idx + 1] = xPtr[i + 1];
+            expandedY[idx + 1] = yPtr[i];  // Horizontal step to next X at current Y
+        }
+        // Add final point
+        expandedX[expandedCount - 1] = xPtr[count - 1];
+        expandedY[expandedCount - 1] = yPtr[count - 1];
+        
+        var fillAlpha = data.HasMultipleSeries ? _config.Style.MultiSeriesFillAlpha : _config.Style.FillAlpha + 0.25f;
+        
+        fixed (double* expXPtr = expandedX)
+        fixed (double* expYPtr = expandedY)
+        {
+            ImPlot.SetNextFillStyle(new Vector4(series.Color.X, series.Color.Y, series.Color.Z, fillAlpha));
+            ImPlot.PlotShaded($"{series.Name}##shaded", expXPtr, expYPtr, expandedCount, 0.0);
+        }
+        
+        ImPlot.SetNextLineStyle(colorVec4, _config.Style.LineWeight);
+        ImPlot.PlotStairs(series.Name, xPtr, yPtr, count);
+    }
+    
+    /// <summary>
     /// Draws crosshair and tooltip when hovering over the plot.
+    /// Only shows tooltip when hovering near a series line or within a series area.
     /// </summary>
     private void DrawHoverEffects(PreparedGraphData data)
     {
@@ -482,36 +655,70 @@ public class ImPlotGraph
         var mouseX = mousePos.X;
         var mouseY = mousePos.Y;
         
-        // Find nearest point across all visible series
+        // Find nearest point across all visible series, checking if we're actually over the series
         string nearestSeriesName = string.Empty;
         float nearestValue = 0f;
         var nearestColor = new Vector3(1f, 1f, 1f);
+        var foundHoveredSeries = false;
         var minYDistance = double.MaxValue;
-        var foundPoint = false;
+        
+        // Define pixel threshold for "hovering near line"
+        var lineHoverThresholdPixels = _config.Style.LineWeight * 3 + 4f;
         
         foreach (var series in data.Series)
         {
-            if (!series.Visible || series.PointCount == 0) continue;
+            if (!series.Visible || IsSeriesEffectivelyHidden(series) || series.PointCount == 0) continue;
             
             var idx = BinarySearchNearestX(series.XValues, series.PointCount, mouseX);
             
             if (idx >= 0 && idx < series.PointCount)
             {
                 var value = (float)series.YValues[idx];
-                var yDistance = Math.Abs(mouseY - value);
+                var isHoveringThisSeries = false;
                 
-                if (yDistance < minYDistance)
+                // Get the X range of this series
+                var seriesMinX = series.XValues[0];
+                var seriesMaxX = series.XValues[series.PointCount - 1];
+                
+                // Check if mouse is over this series based on graph type
+                if (_config.GraphType == GraphType.Area || _config.GraphType == GraphType.StairsArea)
                 {
-                    minYDistance = yDistance;
-                    nearestSeriesName = series.Name;
-                    nearestValue = value;
-                    nearestColor = series.Color;
-                    foundPoint = true;
+                    // For area charts: check if mouse X is within the series data range
+                    // and mouse Y is between 0 and the series value (within the filled area)
+                    if (mouseX >= seriesMinX && mouseX <= seriesMaxX)
+                    {
+                        var seriesValueAtMouse = GetSeriesValueAtX(series, mouseX);
+                        isHoveringThisSeries = mouseY >= 0 && mouseY <= seriesValueAtMouse;
+                        
+                        // Also check if near the line itself
+                        if (!isHoveringThisSeries)
+                        {
+                            isHoveringThisSeries = IsNearSeriesLine(series, mouseX, mouseY, lineHoverThresholdPixels);
+                        }
+                    }
+                }
+                else
+                {
+                    // For line/stairs/bars: check if mouse is near the line
+                    isHoveringThisSeries = IsNearSeriesLine(series, mouseX, mouseY, lineHoverThresholdPixels);
+                }
+                
+                if (isHoveringThisSeries)
+                {
+                    var yDistance = Math.Abs(mouseY - value);
+                    if (yDistance < minYDistance)
+                    {
+                        minYDistance = yDistance;
+                        nearestSeriesName = series.Name;
+                        nearestValue = value;
+                        nearestColor = series.Color;
+                        foundHoveredSeries = true;
+                    }
                 }
             }
         }
         
-        if (foundPoint)
+        if (foundHoveredSeries)
         {
             GraphDrawing.DrawCrosshair(mouseX, mouseY, nearestValue, _config.Style);
             
@@ -531,22 +738,92 @@ public class ImPlotGraph
                 // Add value for nearest series
                 lines.Add($"{nearestSeriesName}: {FormatUtils.FormatAbbreviated(nearestValue)}");
                 
-                GraphDrawing.DrawTooltipBox(screenPos, lines.ToArray(), new Vector4(nearestColor.X, nearestColor.Y, nearestColor.Z, 1f), _config.Style);
+                GraphTooltips.DrawTooltipBox(screenPos, lines.ToArray(), new Vector4(nearestColor.X, nearestColor.Y, nearestColor.Z, 1f), _config.Style);
             }
         }
+    }
+    
+    /// <summary>
+    /// Gets the Y value of a series at a given X position, interpolating for stairs/area charts.
+    /// </summary>
+    private static double GetSeriesValueAtX(GraphSeriesData series, double x)
+    {
+        if (series.PointCount == 0) return 0;
+        if (series.PointCount == 1) return series.YValues[0];
+        
+        // Find the segment containing x
+        for (var i = 0; i < series.PointCount - 1; i++)
+        {
+            if (x >= series.XValues[i] && x < series.XValues[i + 1])
+            {
+                // For stairs, return the current segment's Y value
+                return series.YValues[i];
+            }
+        }
+        
+        // If x is at or beyond the last point, return the last value
+        if (x >= series.XValues[series.PointCount - 1])
+            return series.YValues[series.PointCount - 1];
+        
+        // If x is before the first point, return the first value
+        return series.YValues[0];
+    }
+    
+    /// <summary>
+    /// Checks if the mouse position is near the series line within a pixel threshold.
+    /// </summary>
+    private bool IsNearSeriesLine(GraphSeriesData series, double mouseX, double mouseY, float thresholdPixels)
+    {
+        if (series.PointCount == 0) return false;
+        
+        // Get the Y value at the mouse X position
+        var idx = BinarySearchNearestX(series.XValues, series.PointCount, mouseX);
+        if (idx < 0 || idx >= series.PointCount) return false;
+        
+        // For stairs charts, use step behavior
+        double seriesY;
+        if (_config.GraphType == GraphType.Stairs || _config.GraphType == GraphType.StairsArea)
+        {
+            seriesY = GetSeriesValueAtX(series, mouseX);
+        }
+        else
+        {
+            // For line charts, interpolate between points if in between
+            if (idx < series.PointCount - 1 && mouseX > series.XValues[idx] && mouseX < series.XValues[idx + 1])
+            {
+                var x0 = series.XValues[idx];
+                var x1 = series.XValues[idx + 1];
+                var y0 = series.YValues[idx];
+                var y1 = series.YValues[idx + 1];
+                var t = (mouseX - x0) / (x1 - x0);
+                seriesY = y0 + t * (y1 - y0);
+            }
+            else
+            {
+                seriesY = series.YValues[idx];
+            }
+        }
+        
+        // Convert to pixel coordinates and check distance
+        var mousePixel = ImPlot.PlotToPixels(mouseX, mouseY);
+        var seriesPixel = ImPlot.PlotToPixels(mouseX, seriesY);
+        var pixelDistance = Math.Abs(mousePixel.Y - seriesPixel.Y);
+        
+        return pixelDistance <= thresholdPixels;
     }
     
     /// <summary>
     /// Draws current value labels at the latest point of each visible series.
     /// Labels are colored to match their series and auto-adjust to prevent overlap.
     /// </summary>
-    private void DrawValueLabels(PreparedGraphData data)
+    /// <returns>List of label bounds for hover detection.</returns>
+    private List<GraphValueLabels.ValueLabelBounds> DrawValueLabels(PreparedGraphData data)
     {
         var seriesData = new List<(string Name, double LastX, double LastY, Vector3 Color)>();
         
         foreach (var series in data.Series)
         {
-            if (!series.Visible || series.PointCount == 0) continue;
+            if (!series.Visible || IsSeriesEffectivelyHidden(series) || series.PointCount == 0) continue;
             
             var lastX = series.XValues[series.PointCount - 1];
             var lastY = series.YValues[series.PointCount - 1];
@@ -555,8 +832,10 @@ public class ImPlotGraph
         
         if (seriesData.Count > 0)
         {
-            GraphDrawing.DrawCurrentValueLabels(seriesData, _config.Style);
+            return GraphValueLabels.DrawCurrentValueLabels(seriesData, _config.Style, _config.ValueLabelOffsetX, _config.ValueLabelOffsetY);
         }
+        
+        return new List<GraphValueLabels.ValueLabelBounds>();
     }
     
     /// <summary>
@@ -611,6 +890,7 @@ public class ImPlotGraph
         return new PreparedGraphData
         {
             Series = series,
+            Groups = _groups,
             XMin = 0,
             XMax = xDataMax + xPadding,
             YMin = yMin,
@@ -656,7 +936,8 @@ public class ImPlotGraph
                 YValues = yValues,
                 PointCount = pointCount,
                 Color = colors[i],
-                Visible = !_hiddenSeries.Contains(name)
+                Visible = !_hiddenSeries.Contains(name),
+                GroupNames = GetGroupNamesForSeries(name)
             });
         }
         
@@ -666,6 +947,7 @@ public class ImPlotGraph
         return new PreparedGraphData
         {
             Series = series,
+            Groups = _groups,
             XMin = xMin,
             XMax = xMax,
             YMin = yMin,
@@ -729,7 +1011,8 @@ public class ImPlotGraph
                 YValues = yValues,
                 PointCount = pointCount,
                 Color = color,
-                Visible = !_hiddenSeries.Contains(name)
+                Visible = !_hiddenSeries.Contains(name),
+                GroupNames = GetGroupNamesForSeries(name)
             });
         }
         
@@ -739,6 +1022,7 @@ public class ImPlotGraph
         return new PreparedGraphData
         {
             Series = series,
+            Groups = _groups,
             XMin = xMin,
             XMax = xMax,
             YMin = yMin,
@@ -770,6 +1054,26 @@ public class ImPlotGraph
         
         var totalTimeSpan = Math.Max(1, (globalMaxTime - globalMinTime).TotalSeconds);
         return (globalMinTime, totalTimeSpan);
+    }
+    
+    /// <summary>
+    /// Gets the list of group names that a series belongs to, based on the configured groups.
+    /// </summary>
+    private IReadOnlyList<string>? GetGroupNamesForSeries(string seriesName)
+    {
+        if (_groups == null || _groups.Count == 0)
+            return null;
+        
+        var groupNames = new List<string>();
+        foreach (var group in _groups)
+        {
+            if (group.SeriesNames.Contains(seriesName))
+            {
+                groupNames.Add(group.Name);
+            }
+        }
+        
+        return groupNames.Count > 0 ? groupNames : null;
     }
     
     private (double xMin, double xMax) CalculateXLimits(double totalTimeSpan)
@@ -849,8 +1153,28 @@ public class ImPlotGraph
         return (yMin, yMax);
     }
     
-    private void UpdateAutoScrollLimits(PreparedGraphData data)
+private void UpdateRealTimeLimits(PreparedGraphData data)
     {
+        // Update TotalTimeSpan to reflect current time for real-time visualization
+        // This extends the last data point to "now", making the graph appear to continuously update
+        if (data.IsTimeBased && data.StartTime != DateTime.MinValue)
+        {
+            var newTotalTimeSpan = Math.Max(1, (DateTime.UtcNow - data.StartTime).TotalSeconds);
+            
+            // Update the synthetic "now" point in each series to extend to current time
+            foreach (var series in data.Series)
+            {
+                if (series.PointCount > 0)
+                {
+                    // The last point is the synthetic "now" point - update its X value
+                    series.XValues[series.PointCount - 1] = newTotalTimeSpan;
+                }
+            }
+
+            data.TotalTimeSpan = newTotalTimeSpan;
+        }
+        
+        // Recalculate X limits based on auto-scroll settings or default behavior
         var (xMin, xMax) = CalculateXLimits(data.TotalTimeSpan);
         data.XMin = xMin;
         data.XMax = xMax;

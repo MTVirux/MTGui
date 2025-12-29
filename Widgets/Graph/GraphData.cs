@@ -37,6 +37,12 @@ public sealed class GraphSeriesData
     /// Whether this series should be rendered (not hidden by user).
     /// </summary>
     public bool Visible { get; init; } = true;
+    
+    /// <summary>
+    /// Names of groups this series belongs to. A series can belong to multiple groups.
+    /// If any group is hidden, the series will be hidden.
+    /// </summary>
+    public IReadOnlyList<string>? GroupNames { get; init; }
 }
 
 /// <summary>
@@ -48,6 +54,11 @@ public sealed class PreparedGraphData
     /// All series to render.
     /// </summary>
     public required IReadOnlyList<GraphSeriesData> Series { get; init; }
+    
+    /// <summary>
+    /// Groups for the legend. Each group can toggle visibility of its member series.
+    /// </summary>
+    public IReadOnlyList<GraphSeriesGroup>? Groups { get; init; }
     
     /// <summary>
     /// Minimum X value across all visible series.
@@ -95,4 +106,9 @@ public sealed class PreparedGraphData
     /// This ensures the legend remains visible when series are hidden, allowing users to re-enable them.
     /// </summary>
     public bool HasMultipleSeriesTotal => Series.Count > 1;
+    
+    /// <summary>
+    /// Whether this graph has any groups defined.
+    /// </summary>
+    public bool HasGroups => Groups is { Count: > 0 };
 }

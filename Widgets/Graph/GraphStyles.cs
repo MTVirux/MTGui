@@ -268,7 +268,7 @@ public class GraphStyleConfig
     public float ValueLabelHorizontalOffset { get; set; } = 6f;
     
     /// <summary>Maximum number of labels to show before hiding some. Default: 12</summary>
-    public int ValueLabelMaxVisible { get; set; } = 12;
+    public int ValueLabelMaxVisible { get; set; } = 30;
     
     /// <summary>Alpha for label background. Default: 0.85</summary>
     public float ValueLabelBackgroundAlpha { get; set; } = 0.85f;

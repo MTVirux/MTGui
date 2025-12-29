@@ -30,7 +30,37 @@ public static class GraphLegend
         Action<string>? onToggleSeries = null,
         GraphStyleConfig? style = null)
     {
+        DrawScrollableLegend(plotId, series, null, hiddenSeries, null, width, height, onToggleSeries, null, style);
+    }
+    
+    /// <summary>
+    /// Draws a scrollable legend panel outside the plot area using ImGui child window.
+    /// Supports both series and group toggling.
+    /// </summary>
+    /// <param name="plotId">Unique identifier for the plot (used for child window ID).</param>
+    /// <param name="series">The series data to display in the legend.</param>
+    /// <param name="groups">Optional groups to display in the legend (shown before series).</param>
+    /// <param name="hiddenSeries">Set of hidden series names.</param>
+    /// <param name="hiddenGroups">Set of hidden group names.</param>
+    /// <param name="width">Width of the legend panel.</param>
+    /// <param name="height">Height of the legend panel.</param>
+    /// <param name="onToggleSeries">Callback when a series visibility is toggled.</param>
+    /// <param name="onToggleGroup">Callback when a group visibility is toggled.</param>
+    /// <param name="style">Optional style configuration.</param>
+    public static void DrawScrollableLegend(
+        string plotId,
+        IReadOnlyList<GraphSeriesData> series,
+        IReadOnlyList<GraphSeriesGroup>? groups,
+        HashSet<string> hiddenSeries,
+        HashSet<string>? hiddenGroups,
+        float width,
+        float height,
+        Action<string>? onToggleSeries = null,
+        Action<string>? onToggleGroup = null,
+        GraphStyleConfig? style = null)
+    {
         style ??= GraphStyleConfig.Default;
+        hiddenGroups ??= new HashSet<string>();
         
         // Style the legend panel with trading platform colors
         ImGui.PushStyleColor(ImGuiCol.ChildBg, ChartColors.FrameBackground);
@@ -40,21 +70,76 @@ public static class GraphLegend
         
         if (ImGui.BeginChild($"##{plotId}_legend", new Vector2(width, height), true))
         {
+            var drawList = ImGui.GetWindowDrawList();
+            var indicatorSize = style.LegendIndicatorSize;
+            
+            // Draw groups first (if any)
+            if (groups is { Count: > 0 })
+            {
+                foreach (var group in groups)
+                {
+                    var isHidden = hiddenGroups.Contains(group.Name);
+                    var displayAlpha = isHidden ? style.LegendHiddenAlpha : 1f;
+                    
+                    var cursorPos = ImGui.GetCursorScreenPos();
+                    var colorU32 = ImGui.GetColorU32(new Vector4(group.Color.X, group.Color.Y, group.Color.Z, displayAlpha));
+                    
+                    // Draw group indicator as a folder-like icon (rounded rect with different style)
+                    if (isHidden)
+                    {
+                        drawList.AddRect(cursorPos, new Vector2(cursorPos.X + indicatorSize, cursorPos.Y + indicatorSize), colorU32, 3f, ImDrawFlags.None, 2f);
+                    }
+                    else
+                    {
+                        drawList.AddRectFilled(cursorPos, new Vector2(cursorPos.X + indicatorSize, cursorPos.Y + indicatorSize), colorU32, 3f);
+                    }
+                    
+                    var rowStart = cursorPos;
+                    
+                    ImGui.Dummy(new Vector2(indicatorSize + 4f, indicatorSize));
+                    ImGui.SameLine();
+                    
+                    var textColor = isHidden ? ChartColors.TextSecondary : ChartColors.TextPrimary;
+                    ImGui.PushStyleColor(ImGuiCol.Text, textColor);
+                    ImGui.TextUnformatted($"[{group.Name}]");
+                    ImGui.PopStyleColor();
+                    
+                    ImGui.SetCursorScreenPos(rowStart);
+                    if (ImGui.InvisibleButton($"##legend_group_toggle_{group.Name}", new Vector2(width - 16f, indicatorSize + 2f)))
+                    {
+                        onToggleGroup?.Invoke(group.Name);
+                    }
+                    
+                    if (ImGui.IsItemHovered())
+                    {
+                        var statusText = isHidden ? " (hidden)" : "";
+                        var seriesCount = group.SeriesNames.Count;
+                        ImGui.SetTooltip($"Group: {group.Name}{statusText}\n{seriesCount} series\nClick to toggle group visibility");
+                    }
+                }
+                
+                // Add separator between groups and series
+                ImGui.Spacing();
+                ImGui.Separator();
+                ImGui.Spacing();
+            }
+            
             // Sort series by last value descending
             var sortedSeries = series.OrderByDescending(s => s.PointCount > 0 ? s.YValues[s.PointCount - 1] : 0).ToList();
             
             foreach (var seriesItem in sortedSeries)
             {
-                var isHidden = hiddenSeries.Contains(seriesItem.Name);
+                // Check if series is hidden directly or via group
+                var isDirectlyHidden = hiddenSeries.Contains(seriesItem.Name);
+                var isHiddenViaGroup = IsSeriesHiddenViaGroup(seriesItem, hiddenGroups);
+                var isHidden = isDirectlyHidden || isHiddenViaGroup;
                 var lastValue = seriesItem.PointCount > 0 ? (float)seriesItem.YValues[seriesItem.PointCount - 1] : 0f;
                 
                 // Use dimmed color for hidden series
                 var displayAlpha = isHidden ? style.LegendHiddenAlpha : 1f;
                 
                 // Draw colored square indicator (rounded for modern look)
-                var drawList = ImGui.GetWindowDrawList();
                 var cursorPos = ImGui.GetCursorScreenPos();
-                var indicatorSize = style.LegendIndicatorSize;
                 var colorU32 = ImGui.GetColorU32(new Vector4(seriesItem.Color.X, seriesItem.Color.Y, seriesItem.Color.Z, displayAlpha));
                 
                 if (isHidden)
@@ -91,13 +176,33 @@ public static class GraphLegend
                 // Show tooltip on hover with styled content
                 if (ImGui.IsItemHovered())
                 {
-                    var statusText = isHidden ? " (hidden)" : "";
-                    ImGui.SetTooltip($"{seriesItem.Name}: {FormatUtils.FormatAbbreviated(lastValue)}{statusText}\nClick to toggle visibility");
+                    var statusText = isDirectlyHidden ? " (hidden)" : isHiddenViaGroup ? " (hidden via group)" : "";
+                    var groupInfo = seriesItem.GroupNames is { Count: > 0 } 
+                        ? $"\nGroups: {string.Join(", ", seriesItem.GroupNames)}" 
+                        : "";
+                    ImGui.SetTooltip($"{seriesItem.Name}: {FormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility");
                 }
             }
         }
         ImGui.EndChild();
         ImGui.PopStyleColor(4);
+    }
+    
+    /// <summary>
+    /// Checks if a series is hidden via any of its groups.
+    /// </summary>
+    private static bool IsSeriesHiddenViaGroup(GraphSeriesData series, HashSet<string> hiddenGroups)
+    {
+        if (series.GroupNames is not { Count: > 0 })
+            return false;
+        
+        foreach (var groupName in series.GroupNames)
+        {
+            if (hiddenGroups.Contains(groupName))
+                return true;
+        }
+        
+        return false;
     }
     
     #endregion
@@ -152,7 +257,36 @@ public static class GraphLegend
         Action<string>? onToggleSeries = null,
         GraphStyleConfig? style = null)
     {
+        return DrawInsideLegend(data, hiddenSeries, null, position, legendHeightPercent, scrollOffset, onToggleSeries, null, style);
+    }
+    
+    /// <summary>
+    /// Draws an interactive legend inside the plot area using ImPlot's draw list.
+    /// Supports both series and group toggling.
+    /// </summary>
+    /// <param name="data">Prepared graph data containing series and groups.</param>
+    /// <param name="hiddenSeries">Set of hidden series names.</param>
+    /// <param name="hiddenGroups">Set of hidden group names.</param>
+    /// <param name="position">Legend position within the plot.</param>
+    /// <param name="legendHeightPercent">Maximum legend height as percentage of plot height (10-80).</param>
+    /// <param name="scrollOffset">Current scroll offset (pass result back on next frame).</param>
+    /// <param name="onToggleSeries">Callback when a series visibility is toggled.</param>
+    /// <param name="onToggleGroup">Callback when a group visibility is toggled.</param>
+    /// <param name="style">Optional style configuration.</param>
+    /// <returns>Result containing legend bounds and updated scroll offset.</returns>
+    public static InsideLegendResult DrawInsideLegend(
+        PreparedGraphData data,
+        HashSet<string> hiddenSeries,
+        HashSet<string>? hiddenGroups,
+        LegendPosition position,
+        float legendHeightPercent,
+        float scrollOffset,
+        Action<string>? onToggleSeries = null,
+        Action<string>? onToggleGroup = null,
+        GraphStyleConfig? style = null)
+    {
         style ??= GraphStyleConfig.Default;
+        hiddenGroups ??= new HashSet<string>();
         
         var drawList = ImPlot.GetPlotDrawList();
         var plotPos = ImPlot.GetPlotPos();
@@ -164,10 +298,25 @@ public static class GraphLegend
         var rowHeight = style.LegendRowHeight;
         var scrollbarWidth = style.LegendScrollbarWidth;
         const float indicatorTextGap = 6f;
+        const float separatorHeight = 8f;
         
-        // Measure max text width and count valid series
+        // Count groups and series for layout
+        var groupCount = data.Groups?.Count ?? 0;
+        var hasGroups = groupCount > 0;
+        
+        // Measure max text width across both groups and series
         var maxTextWidth = 0f;
         var validSeriesCount = 0;
+        
+        if (data.Groups != null)
+        {
+            foreach (var group in data.Groups)
+            {
+                var textSize = ImGui.CalcTextSize($"[{group.Name}]");
+                maxTextWidth = Math.Max(maxTextWidth, textSize.X);
+            }
+        }
+        
         foreach (var series in data.Series)
         {
             var textSize = ImGui.CalcTextSize(series.Name);
@@ -175,11 +324,14 @@ public static class GraphLegend
             validSeriesCount++;
         }
         
-        if (validSeriesCount == 0) 
+        if (validSeriesCount == 0 && groupCount == 0) 
             return InsideLegendResult.Invalid;
         
-        // Calculate content height and max display height
-        var contentHeight = validSeriesCount * rowHeight;
+        // Calculate content height (groups + separator + series)
+        var contentHeight = (groupCount + validSeriesCount) * rowHeight;
+        if (hasGroups)
+            contentHeight += separatorHeight;
+            
         var maxLegendHeight = plotSize.Y * (legendHeightPercent / 100f);
         maxLegendHeight = Math.Max(maxLegendHeight, rowHeight + padding * 2);
         var needsScrolling = contentHeight > maxLegendHeight - padding * 2;
@@ -190,22 +342,20 @@ public static class GraphLegend
         // Clamp legend dimensions to fit within plot area with margin
         const float legendMargin = 10f;
         var maxLegendWidth = plotSize.X - legendMargin * 2;
-        legendWidth = Math.Min(legendWidth, Math.Max(50f, maxLegendWidth)); // Minimum 50px width
+        legendWidth = Math.Min(legendWidth, Math.Max(50f, maxLegendWidth));
         
-        // Determine legend position and clamp to stay within plot area
+        // Determine legend position
         Vector2 legendPos = position switch
         {
             LegendPosition.InsideTopRight => new Vector2(plotPos.X + plotSize.X - legendWidth - legendMargin, plotPos.Y + legendMargin),
             LegendPosition.InsideBottomLeft => new Vector2(plotPos.X + legendMargin, plotPos.Y + plotSize.Y - legendHeight - legendMargin),
             LegendPosition.InsideBottomRight => new Vector2(plotPos.X + plotSize.X - legendWidth - legendMargin, plotPos.Y + plotSize.Y - legendHeight - legendMargin),
-            _ => new Vector2(plotPos.X + legendMargin, plotPos.Y + legendMargin) // InsideTopLeft default
+            _ => new Vector2(plotPos.X + legendMargin, plotPos.Y + legendMargin)
         };
         
-        // Ensure legend stays within plot bounds
         legendPos.X = Math.Clamp(legendPos.X, plotPos.X + legendMargin, plotPos.X + plotSize.X - legendWidth - legendMargin);
         legendPos.Y = Math.Clamp(legendPos.Y, plotPos.Y + legendMargin, plotPos.Y + plotSize.Y - legendHeight - legendMargin);
         
-        // Clip all legend drawing to the plot area to prevent overlap with axes
         drawList.PushClipRect(plotPos, new Vector2(plotPos.X + plotSize.X, plotPos.Y + plotSize.Y), true);
         
         // Draw legend background
@@ -229,51 +379,125 @@ public static class GraphLegend
             }
         }
         
-        // Clamp scroll offset
         var maxScrollOffset = Math.Max(0f, contentHeight - (legendHeight - padding * 2));
         scrollOffset = Math.Clamp(scrollOffset, 0f, maxScrollOffset);
-        
-        // Sort series by value descending
-        var sortedSeries = data.Series.OrderByDescending(s => s.PointCount > 0 ? s.YValues[s.PointCount - 1] : 0).ToList();
         
         // Calculate visible area
         var contentAreaTop = legendPos.Y + padding;
         var contentAreaBottom = legendPos.Y + legendHeight - padding;
         var contentAreaRight = legendPos.X + legendWidth - padding - (needsScrolling ? scrollbarWidth + 4f : 0f);
         
-        // Draw each legend entry
         var yOffset = contentAreaTop - scrollOffset;
+        
+        // Track which item is being hovered for tooltip
+        string? hoveredItemName = null;
+        bool hoveredIsGroup = false;
+        
+        // Draw groups first
+        if (data.Groups != null)
+        {
+            foreach (var group in data.Groups)
+            {
+                var rowTop = yOffset;
+                var rowBottom = yOffset + rowHeight;
+                
+                if (rowBottom >= contentAreaTop && rowTop <= contentAreaBottom)
+                {
+                    var isHidden = hiddenGroups.Contains(group.Name);
+                    var displayAlpha = isHidden ? style.LegendHiddenAlpha : 1f;
+                    
+                    var mouseInRow = mouseInLegend && 
+                                    mousePos.X <= contentAreaRight &&
+                                    mousePos.Y >= Math.Max(rowTop, contentAreaTop) && 
+                                    mousePos.Y < Math.Min(rowBottom, contentAreaBottom) &&
+                                    rowTop >= contentAreaTop && rowBottom <= contentAreaBottom;
+                    
+                    if (mouseInRow && ImGui.IsMouseClicked(0))
+                    {
+                        onToggleGroup?.Invoke(group.Name);
+                    }
+                    
+                    if (mouseInRow)
+                    {
+                        hoveredItemName = group.Name;
+                        hoveredIsGroup = true;
+                        var hoverColor = ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.1f));
+                        drawList.AddRectFilled(
+                            new Vector2(legendPos.X + 2, Math.Max(rowTop, contentAreaTop)), 
+                            new Vector2(contentAreaRight, Math.Min(rowBottom, contentAreaBottom)), 
+                            hoverColor, 2f);
+                    }
+                    
+                    var indicatorY = yOffset + (rowHeight - indicatorSize) / 2;
+                    var indicatorPos = new Vector2(legendPos.X + padding, indicatorY);
+                    var colorU32 = ImGui.GetColorU32(new Vector4(group.Color.X, group.Color.Y, group.Color.Z, displayAlpha));
+                    
+                    if (isHidden)
+                    {
+                        drawList.AddRect(indicatorPos, new Vector2(indicatorPos.X + indicatorSize, indicatorPos.Y + indicatorSize), colorU32, 3f, ImDrawFlags.None, 2f);
+                    }
+                    else
+                    {
+                        drawList.AddRectFilled(indicatorPos, new Vector2(indicatorPos.X + indicatorSize, indicatorPos.Y + indicatorSize), colorU32, 3f);
+                    }
+                    
+                    var textColor = isHidden ? ChartColors.TextSecondary : ChartColors.TextPrimary;
+                    var textY = yOffset + (rowHeight - ImGui.GetTextLineHeight()) / 2;
+                    var textPos = new Vector2(indicatorPos.X + indicatorSize + indicatorTextGap, textY);
+                    drawList.AddText(textPos, ImGui.GetColorU32(textColor), $"[{group.Name}]");
+                }
+                
+                yOffset += rowHeight;
+            }
+            
+            // Draw separator
+            var separatorY = yOffset + separatorHeight / 2;
+            if (separatorY >= contentAreaTop && separatorY <= contentAreaBottom)
+            {
+                var separatorColor = ImGui.GetColorU32(ChartColors.GridLine);
+                drawList.AddLine(
+                    new Vector2(legendPos.X + padding, separatorY),
+                    new Vector2(legendPos.X + legendWidth - padding - (needsScrolling ? scrollbarWidth + 4f : 0f), separatorY),
+                    separatorColor);
+            }
+            yOffset += separatorHeight;
+        }
+        
+        // Sort series by value descending
+        var sortedSeries = data.Series.OrderByDescending(s => s.PointCount > 0 ? s.YValues[s.PointCount - 1] : 0).ToList();
+        
+        // Draw each series entry
         foreach (var series in sortedSeries)
         {
             var rowTop = yOffset;
             var rowBottom = yOffset + rowHeight;
             
-            // Skip rows outside visible area
             if (rowBottom < contentAreaTop || rowTop > contentAreaBottom)
             {
                 yOffset += rowHeight;
                 continue;
             }
             
-            var isHidden = hiddenSeries.Contains(series.Name);
+            var isDirectlyHidden = hiddenSeries.Contains(series.Name);
+            var isHiddenViaGroup = IsSeriesHiddenViaGroup(series, hiddenGroups);
+            var isHidden = isDirectlyHidden || isHiddenViaGroup;
             var displayAlpha = isHidden ? style.LegendHiddenAlpha : 1f;
             
-            // Check if mouse is over this row (excluding scrollbar area)
             var mouseInRow = mouseInLegend && 
                             mousePos.X <= contentAreaRight &&
                             mousePos.Y >= Math.Max(rowTop, contentAreaTop) && 
                             mousePos.Y < Math.Min(rowBottom, contentAreaBottom) &&
                             rowTop >= contentAreaTop && rowBottom <= contentAreaBottom;
             
-            // Handle click to toggle visibility
             if (mouseInRow && ImGui.IsMouseClicked(0))
             {
                 onToggleSeries?.Invoke(series.Name);
             }
             
-            // Highlight row on hover
             if (mouseInRow)
             {
+                hoveredItemName = series.Name;
+                hoveredIsGroup = false;
                 var hoverColor = ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.1f));
                 drawList.AddRectFilled(
                     new Vector2(legendPos.X + 2, Math.Max(rowTop, contentAreaTop)), 
@@ -281,7 +505,6 @@ public static class GraphLegend
                     hoverColor, 2f);
             }
             
-            // Draw content if visible
             if (rowTop >= contentAreaTop - rowHeight && rowBottom <= contentAreaBottom + rowHeight)
             {
                 var indicatorY = yOffset + (rowHeight - indicatorSize) / 2;
@@ -299,7 +522,6 @@ public static class GraphLegend
                         drawList.AddRectFilled(indicatorPos, new Vector2(indicatorPos.X + indicatorSize, indicatorPos.Y + indicatorSize), colorU32, 2f);
                     }
                     
-                    // Draw series name
                     var textColor = isHidden ? ChartColors.TextSecondary : ChartColors.TextPrimary;
                     var textY = yOffset + (rowHeight - ImGui.GetTextLineHeight()) / 2;
                     if (textY >= contentAreaTop - rowHeight && textY <= contentAreaBottom)
@@ -329,15 +551,40 @@ public static class GraphLegend
                 style);
         }
         
-        // Show tooltip (only when not over scrollbar)
+        // Show tooltip
         var scrollbarX = legendPos.X + legendWidth - padding - scrollbarWidth;
         var mouseOverScrollbar = needsScrolling && mousePos.X >= scrollbarX && mousePos.X <= legendPos.X + legendWidth;
-        if (mouseInLegend && !mouseOverScrollbar)
+        if (mouseInLegend && !mouseOverScrollbar && hoveredItemName != null)
         {
-            ShowLegendTooltip(sortedSeries, hiddenSeries, mousePos, contentAreaTop, scrollOffset, rowHeight, needsScrolling);
+            if (hoveredIsGroup)
+            {
+                var group = data.Groups?.FirstOrDefault(g => g.Name == hoveredItemName);
+                if (group != null)
+                {
+                    var isHidden = hiddenGroups.Contains(group.Name);
+                    var statusText = isHidden ? " (hidden)" : "";
+                    var scrollHint = needsScrolling ? "\nScroll to see more" : "";
+                    ImGui.SetTooltip($"Group: {group.Name}{statusText}\n{group.SeriesNames.Count} series\nClick to toggle visibility{scrollHint}");
+                }
+            }
+            else
+            {
+                var series = sortedSeries.FirstOrDefault(s => s.Name == hoveredItemName);
+                if (series != null)
+                {
+                    var isDirectlyHidden = hiddenSeries.Contains(series.Name);
+                    var isHiddenViaGroup = IsSeriesHiddenViaGroup(series, hiddenGroups);
+                    var lastValue = series.PointCount > 0 ? (float)series.YValues[series.PointCount - 1] : 0f;
+                    var statusText = isDirectlyHidden ? " (hidden)" : isHiddenViaGroup ? " (hidden via group)" : "";
+                    var groupInfo = series.GroupNames is { Count: > 0 } 
+                        ? $"\nGroups: {string.Join(", ", series.GroupNames)}" 
+                        : "";
+                    var scrollHint = needsScrolling ? "\nScroll to see more" : "";
+                    ImGui.SetTooltip($"{series.Name}: {FormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility{scrollHint}");
+                }
+            }
         }
         
-        // Pop the clip rect we pushed earlier
         drawList.PopClipRect();
         
         return new InsideLegendResult(legendPos, new Vector2(legendPos.X + legendWidth, legendPos.Y + legendHeight), scrollOffset);

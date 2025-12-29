@@ -15,7 +15,10 @@ public enum GraphType
     Stairs = 2,
     
     /// <summary>Vertical bar chart.</summary>
-    Bars = 3
+    Bars = 3,
+    
+    /// <summary>Step/stairs chart with filled area - combines stairs with shaded region.</summary>
+    StairsArea = 4
 }
 
 /// <summary>
@@ -134,6 +137,7 @@ public static class GraphTypeExtensions
         GraphType.Line => "Line",
         GraphType.Stairs => "Stairs",
         GraphType.Bars => "Bars",
+        GraphType.StairsArea => "Stairs Area",
         _ => "Unknown"
     };
     
@@ -146,6 +150,7 @@ public static class GraphTypeExtensions
         GraphType.Line => "Simple line chart",
         GraphType.Stairs => "Step chart showing discrete value changes",
         GraphType.Bars => "Vertical bar chart",
+        GraphType.StairsArea => "Step chart with filled area below",
         _ => "Unknown graph type"
     };
 }
