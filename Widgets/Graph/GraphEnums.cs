@@ -3,7 +3,7 @@ namespace MTGui.Graph;
 /// <summary>
 /// Graph visualization type for time-series data.
 /// </summary>
-public enum GraphType
+public enum MTGraphType
 {
     /// <summary>Filled area chart - good for showing volume over time.</summary>
     Area = 0,
@@ -24,7 +24,7 @@ public enum GraphType
 /// <summary>
 /// Unified time unit for data filtering, auto-scroll, and time range selection.
 /// </summary>
-public enum TimeUnit
+public enum MTTimeUnit
 {
     /// <summary>Seconds - for fine-grained auto-scroll control.</summary>
     Seconds = 0,
@@ -51,7 +51,7 @@ public enum TimeUnit
 /// <summary>
 /// Specifies where the legend should be positioned in the graph.
 /// </summary>
-public enum LegendPosition
+public enum MTLegendPosition
 {
     /// <summary>Legend is drawn outside the graph area (to the right).</summary>
     Outside = 0,
@@ -70,9 +70,9 @@ public enum LegendPosition
 }
 
 /// <summary>
-/// Extension methods for TimeUnit enum.
+/// Extension methods for MTTimeUnit enum.
 /// </summary>
-public static class TimeUnitExtensions
+public static class MTTimeUnitExtensions
 {
     /// <summary>
     /// Converts a time value and unit to total seconds.
@@ -80,77 +80,77 @@ public static class TimeUnitExtensions
     /// <param name="unit">The time unit.</param>
     /// <param name="value">The numeric value.</param>
     /// <returns>The total time in seconds.</returns>
-    public static double ToSeconds(this TimeUnit unit, int value) => unit switch
+    public static double ToSeconds(this MTTimeUnit unit, int value) => unit switch
     {
-        TimeUnit.Seconds => value,
-        TimeUnit.Minutes => value * 60,
-        TimeUnit.Hours => value * 3600,
-        TimeUnit.Days => value * 86400,
-        TimeUnit.Weeks => value * 604800,
-        TimeUnit.Months => value * 2592000, // 30 days
-        TimeUnit.All => double.MaxValue,
+        MTTimeUnit.Seconds => value,
+        MTTimeUnit.Minutes => value * 60,
+        MTTimeUnit.Hours => value * 3600,
+        MTTimeUnit.Days => value * 86400,
+        MTTimeUnit.Weeks => value * 604800,
+        MTTimeUnit.Months => value * 2592000, // 30 days
+        MTTimeUnit.All => double.MaxValue,
         _ => 3600
     };
     
     /// <summary>
     /// Gets the display name for a time unit.
     /// </summary>
-    public static string GetDisplayName(this TimeUnit unit) => unit switch
+    public static string GetDisplayName(this MTTimeUnit unit) => unit switch
     {
-        TimeUnit.Seconds => "Seconds",
-        TimeUnit.Minutes => "Minutes",
-        TimeUnit.Hours => "Hours",
-        TimeUnit.Days => "Days",
-        TimeUnit.Weeks => "Weeks",
-        TimeUnit.Months => "Months",
-        TimeUnit.All => "All Time",
+        MTTimeUnit.Seconds => "Seconds",
+        MTTimeUnit.Minutes => "Minutes",
+        MTTimeUnit.Hours => "Hours",
+        MTTimeUnit.Days => "Days",
+        MTTimeUnit.Weeks => "Weeks",
+        MTTimeUnit.Months => "Months",
+        MTTimeUnit.All => "All Time",
         _ => "Unknown"
     };
     
     /// <summary>
     /// Gets the short name for a time unit (for compact UI).
     /// </summary>
-    public static string GetShortName(this TimeUnit unit) => unit switch
+    public static string GetShortName(this MTTimeUnit unit) => unit switch
     {
-        TimeUnit.Seconds => "sec",
-        TimeUnit.Minutes => "min",
-        TimeUnit.Hours => "hr",
-        TimeUnit.Days => "day",
-        TimeUnit.Weeks => "wk",
-        TimeUnit.Months => "mo",
-        TimeUnit.All => "all",
+        MTTimeUnit.Seconds => "sec",
+        MTTimeUnit.Minutes => "min",
+        MTTimeUnit.Hours => "hr",
+        MTTimeUnit.Days => "day",
+        MTTimeUnit.Weeks => "wk",
+        MTTimeUnit.Months => "mo",
+        MTTimeUnit.All => "all",
         _ => "?"
     };
 }
 
 /// <summary>
-/// Extension methods for GraphType enum.
+/// Extension methods for MTGraphType enum.
 /// </summary>
-public static class GraphTypeExtensions
+public static class MTGraphTypeExtensions
 {
     /// <summary>
     /// Gets the display name for a graph type.
     /// </summary>
-    public static string GetDisplayName(this GraphType type) => type switch
+    public static string GetDisplayName(this MTGraphType type) => type switch
     {
-        GraphType.Area => "Area",
-        GraphType.Line => "Line",
-        GraphType.Stairs => "Stairs",
-        GraphType.Bars => "Bars",
-        GraphType.StairsArea => "Stairs Area",
+        MTGraphType.Area => "Area",
+        MTGraphType.Line => "Line",
+        MTGraphType.Stairs => "Stairs",
+        MTGraphType.Bars => "Bars",
+        MTGraphType.StairsArea => "Stairs Area",
         _ => "Unknown"
     };
     
     /// <summary>
     /// Gets a description of the graph type.
     /// </summary>
-    public static string GetDescription(this GraphType type) => type switch
+    public static string GetDescription(this MTGraphType type) => type switch
     {
-        GraphType.Area => "Filled area chart - good for showing volume over time",
-        GraphType.Line => "Simple line chart",
-        GraphType.Stairs => "Step chart showing discrete value changes",
-        GraphType.Bars => "Vertical bar chart",
-        GraphType.StairsArea => "Step chart with filled area below",
+        MTGraphType.Area => "Filled area chart - good for showing volume over time",
+        MTGraphType.Line => "Simple line chart",
+        MTGraphType.Stairs => "Step chart showing discrete value changes",
+        MTGraphType.Bars => "Vertical bar chart",
+        MTGraphType.StairsArea => "Step chart with filled area below",
         _ => "Unknown graph type"
     };
 }

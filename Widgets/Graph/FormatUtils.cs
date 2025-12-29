@@ -4,7 +4,7 @@ namespace MTGui.Graph;
 /// Utility class for formatting values in a human-readable way.
 /// Provides consistent formatting for large numbers with K/M/B abbreviations.
 /// </summary>
-public static class FormatUtils
+public static class MTFormatUtils
 {
     /// <summary>
     /// Formats a numeric value with K/M/B abbreviation.

@@ -7,7 +7,7 @@ namespace MTGui.Graph;
 /// Legend rendering utilities for ImPlot graphs.
 /// Provides methods for drawing scrollable legends both inside and outside the plot area.
 /// </summary>
-public static class GraphLegend
+public static class MTGraphLegend
 {
     #region Outside Legend (Child Window)
     
@@ -23,12 +23,12 @@ public static class GraphLegend
     /// <param name="style">Optional style configuration.</param>
     public static void DrawScrollableLegend(
         string plotId,
-        IReadOnlyList<GraphSeriesData> series,
+        IReadOnlyList<MTGraphSeriesData> series,
         HashSet<string> hiddenSeries,
         float width,
         float height,
         Action<string>? onToggleSeries = null,
-        GraphStyleConfig? style = null)
+        MTGraphStyleConfig? style = null)
     {
         DrawScrollableLegend(plotId, series, null, hiddenSeries, null, width, height, onToggleSeries, null, style);
     }
@@ -49,17 +49,17 @@ public static class GraphLegend
     /// <param name="style">Optional style configuration.</param>
     public static void DrawScrollableLegend(
         string plotId,
-        IReadOnlyList<GraphSeriesData> series,
-        IReadOnlyList<GraphSeriesGroup>? groups,
+        IReadOnlyList<MTGraphSeriesData> series,
+        IReadOnlyList<MTGraphSeriesGroup>? groups,
         HashSet<string> hiddenSeries,
         HashSet<string>? hiddenGroups,
         float width,
         float height,
         Action<string>? onToggleSeries = null,
         Action<string>? onToggleGroup = null,
-        GraphStyleConfig? style = null)
+        MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         hiddenGroups ??= new HashSet<string>();
         var colors = style.Colors;
         
@@ -181,7 +181,7 @@ public static class GraphLegend
                     var groupInfo = seriesItem.GroupNames is { Count: > 0 } 
                         ? $"\nGroups: {string.Join(", ", seriesItem.GroupNames)}" 
                         : "";
-                    ImGui.SetTooltip($"{seriesItem.Name}: {FormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility");
+                    ImGui.SetTooltip($"{seriesItem.Name}: {MTFormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility");
                 }
             }
         }
@@ -192,7 +192,7 @@ public static class GraphLegend
     /// <summary>
     /// Checks if a series is hidden via any of its groups.
     /// </summary>
-    private static bool IsSeriesHiddenViaGroup(GraphSeriesData series, HashSet<string> hiddenGroups)
+    private static bool IsSeriesHiddenViaGroup(MTGraphSeriesData series, HashSet<string> hiddenGroups)
     {
         if (series.GroupNames is not { Count: > 0 })
             return false;
@@ -250,13 +250,13 @@ public static class GraphLegend
     /// <param name="style">Optional style configuration.</param>
     /// <returns>Result containing legend bounds and updated scroll offset.</returns>
     public static InsideLegendResult DrawInsideLegend(
-        PreparedGraphData data,
+        MTPreparedGraphData data,
         HashSet<string> hiddenSeries,
-        LegendPosition position,
+        MTLegendPosition position,
         float legendHeightPercent,
         float scrollOffset,
         Action<string>? onToggleSeries = null,
-        GraphStyleConfig? style = null)
+        MTGraphStyleConfig? style = null)
     {
         return DrawInsideLegend(data, hiddenSeries, null, position, legendHeightPercent, scrollOffset, onToggleSeries, null, style);
     }
@@ -276,17 +276,17 @@ public static class GraphLegend
     /// <param name="style">Optional style configuration.</param>
     /// <returns>Result containing legend bounds and updated scroll offset.</returns>
     public static InsideLegendResult DrawInsideLegend(
-        PreparedGraphData data,
+        MTPreparedGraphData data,
         HashSet<string> hiddenSeries,
         HashSet<string>? hiddenGroups,
-        LegendPosition position,
+        MTLegendPosition position,
         float legendHeightPercent,
         float scrollOffset,
         Action<string>? onToggleSeries = null,
         Action<string>? onToggleGroup = null,
-        GraphStyleConfig? style = null)
+        MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         hiddenGroups ??= new HashSet<string>();
         var colors = style.Colors;
         
@@ -349,9 +349,9 @@ public static class GraphLegend
         // Determine legend position
         Vector2 legendPos = position switch
         {
-            LegendPosition.InsideTopRight => new Vector2(plotPos.X + plotSize.X - legendWidth - legendMargin, plotPos.Y + legendMargin),
-            LegendPosition.InsideBottomLeft => new Vector2(plotPos.X + legendMargin, plotPos.Y + plotSize.Y - legendHeight - legendMargin),
-            LegendPosition.InsideBottomRight => new Vector2(plotPos.X + plotSize.X - legendWidth - legendMargin, plotPos.Y + plotSize.Y - legendHeight - legendMargin),
+            MTLegendPosition.InsideTopRight => new Vector2(plotPos.X + plotSize.X - legendWidth - legendMargin, plotPos.Y + legendMargin),
+            MTLegendPosition.InsideBottomLeft => new Vector2(plotPos.X + legendMargin, plotPos.Y + plotSize.Y - legendHeight - legendMargin),
+            MTLegendPosition.InsideBottomRight => new Vector2(plotPos.X + plotSize.X - legendWidth - legendMargin, plotPos.Y + plotSize.Y - legendHeight - legendMargin),
             _ => new Vector2(plotPos.X + legendMargin, plotPos.Y + legendMargin)
         };
         
@@ -582,7 +582,7 @@ public static class GraphLegend
                         ? $"\nGroups: {string.Join(", ", series.GroupNames)}" 
                         : "";
                     var scrollHint = needsScrolling ? "\nScroll to see more" : "";
-                    ImGui.SetTooltip($"{series.Name}: {FormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility{scrollHint}");
+                    ImGui.SetTooltip($"{series.Name}: {MTFormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility{scrollHint}");
                 }
             }
         }
@@ -610,7 +610,7 @@ public static class GraphLegend
         float visibleHeight,
         float scrollOffset,
         float maxScrollOffset,
-        GraphStyleConfig style)
+        MTGraphStyleConfig style)
     {
         var trackHeight = trackBottom - trackTop;
         
@@ -672,7 +672,7 @@ public static class GraphLegend
     /// Shows tooltip for the hovered legend entry.
     /// </summary>
     private static void ShowLegendTooltip(
-        IReadOnlyList<GraphSeriesData> sortedSeries,
+        IReadOnlyList<MTGraphSeriesData> sortedSeries,
         HashSet<string> hiddenSeries,
         Vector2 mousePos,
         float contentAreaTop,
@@ -689,7 +689,7 @@ public static class GraphLegend
             var lastValue = series.PointCount > 0 ? (float)series.YValues[series.PointCount - 1] : 0f;
             var statusText = isHidden ? " (hidden)" : "";
             var scrollHint = needsScrolling ? "\nScroll to see more" : "";
-            ImGui.SetTooltip($"{series.Name}: {FormatUtils.FormatAbbreviated(lastValue)}{statusText}\nClick to toggle visibility{scrollHint}");
+            ImGui.SetTooltip($"{series.Name}: {MTFormatUtils.FormatAbbreviated(lastValue)}{statusText}\nClick to toggle visibility{scrollHint}");
         }
     }
     

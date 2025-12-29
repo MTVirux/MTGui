@@ -7,7 +7,7 @@ namespace MTGui.Graph;
 /// Color configuration for graph styling.
 /// Provides customizable colors with vibrant, professional defaults inspired by financial charting platforms.
 /// </summary>
-public class GraphColorConfig
+public class MTGraphColorConfig
 {
     #region Background Colors
     
@@ -109,7 +109,7 @@ public class GraphColorConfig
     /// <summary>
     /// Gets a new instance with default color values.
     /// </summary>
-    public static GraphColorConfig Default => new();
+    public static MTGraphColorConfig Default => new();
     
     #endregion
     
@@ -136,18 +136,18 @@ public class GraphColorConfig
 /// Provides methods for pushing/popping ImPlot style configurations.
 /// </summary>
 /// <remarks>
-/// For color customization, use <see cref="GraphStyleConfig.Colors"/> property.
+/// For color customization, use <see cref="MTGraphStyleConfig.Colors"/> property.
 /// The static <see cref="DefaultColors"/> property provides backward compatibility.
 /// </remarks>
-public static class ChartColors
+public static class MTChartColors
 {
     #region Backward Compatibility - Static Color Properties
     
     /// <summary>
     /// Default color configuration instance for backward compatibility.
-    /// Use <see cref="GraphStyleConfig.Colors"/> for customization.
+    /// Use <see cref="MTGraphStyleConfig.Colors"/> for customization.
     /// </summary>
-    public static GraphColorConfig DefaultColors { get; } = new();
+    public static MTGraphColorConfig DefaultColors { get; } = new();
     
     /// <summary>Plot background color - dark charcoal.</summary>
     public static Vector4 PlotBackground => DefaultColors.PlotBackground;
@@ -224,9 +224,9 @@ public static class ChartColors
     /// Must be called before BeginPlot and matched with PopChartStyle after EndPlot.
     /// </summary>
     /// <param name="style">Optional style configuration for customization.</param>
-    public static void PushChartStyle(GraphStyleConfig? style = null)
+    public static void PushChartStyle(MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         var colors = style.Colors;
         
         // Plot frame and background
@@ -261,7 +261,7 @@ public static class ChartColors
     /// <param name="count">Number of series.</param>
     /// <param name="colors">Optional color configuration. Uses default if null.</param>
     /// <returns>Array of colors cycling through the palette.</returns>
-    public static Vector3[] GetSeriesColors(int count, GraphColorConfig? colors = null)
+    public static Vector3[] GetSeriesColors(int count, MTGraphColorConfig? colors = null)
     {
         colors ??= DefaultColors;
         return colors.GetSeriesColors(count);
@@ -274,7 +274,7 @@ public static class ChartColors
 /// Style configuration for ImPlot graphs.
 /// Contains all configurable style values that can be customized.
 /// </summary>
-public class GraphStyleConfig
+public class MTGraphStyleConfig
 {
     #region Color Configuration
     
@@ -282,7 +282,7 @@ public class GraphStyleConfig
     /// Color configuration for the graph.
     /// Allows customization of all graph colors including backgrounds, text, and series colors.
     /// </summary>
-    public GraphColorConfig Colors { get; set; } = new();
+    public MTGraphColorConfig Colors { get; set; } = new();
     
     #endregion
     
@@ -482,5 +482,5 @@ public class GraphStyleConfig
     /// <summary>
     /// Creates a default style configuration.
     /// </summary>
-    public static GraphStyleConfig Default => new();
+    public static MTGraphStyleConfig Default => new();
 }

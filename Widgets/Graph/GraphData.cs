@@ -4,7 +4,7 @@ namespace MTGui.Graph;
 /// Represents a single data series for graph rendering.
 /// Abstracts over both index-based and time-based data sources.
 /// </summary>
-public sealed class GraphSeriesData
+public sealed class MTGraphSeriesData
 {
     /// <summary>
     /// Display name for this series (used in legends and tooltips).
@@ -48,17 +48,17 @@ public sealed class GraphSeriesData
 /// <summary>
 /// Prepared data for graph rendering, including computed bounds and all series.
 /// </summary>
-public sealed class PreparedGraphData
+public sealed class MTPreparedGraphData
 {
     /// <summary>
     /// All series to render.
     /// </summary>
-    public required IReadOnlyList<GraphSeriesData> Series { get; init; }
+    public required IReadOnlyList<MTGraphSeriesData> Series { get; init; }
     
     /// <summary>
     /// Groups for the legend. Each group can toggle visibility of its member series.
     /// </summary>
-    public IReadOnlyList<GraphSeriesGroup>? Groups { get; init; }
+    public IReadOnlyList<MTGraphSeriesGroup>? Groups { get; init; }
     
     /// <summary>
     /// Minimum X value across all visible series.

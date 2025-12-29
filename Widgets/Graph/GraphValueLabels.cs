@@ -6,7 +6,7 @@ namespace MTGui.Graph;
 /// <summary>
 /// Static utilities for drawing value labels on ImPlot graphs.
 /// </summary>
-public static class GraphValueLabels
+public static class MTGraphValueLabels
 {
     /// <summary>
     /// Contains information about a rendered value label for hover detection.
@@ -94,9 +94,9 @@ public static class GraphValueLabels
     /// <param name="offsetX">Additional horizontal offset for all labels. Default: 0</param>
     /// <param name="offsetY">Additional vertical offset for all labels. Default: 0</param>
     /// <returns>List of label bounds for hover detection.</returns>
-    public static List<ValueLabelBounds> DrawCurrentValueLabels(IReadOnlyList<(string Name, double LastX, double LastY, Vector3 Color)> seriesData, GraphStyleConfig? style = null, float offsetX = 0f, float offsetY = 0f)
+    public static List<ValueLabelBounds> DrawCurrentValueLabels(IReadOnlyList<(string Name, double LastX, double LastY, Vector3 Color)> seriesData, MTGraphStyleConfig? style = null, float offsetX = 0f, float offsetY = 0f)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         
         if (seriesData.Count == 0)
             return new List<ValueLabelBounds>();
@@ -134,7 +134,7 @@ public static class GraphValueLabels
                 continue;
             
             var pixelPos = ImPlot.PlotToPixels(lastX, lastY);
-            var valueText = FormatUtils.FormatAbbreviated((float)lastY);
+            var valueText = MTFormatUtils.FormatAbbreviated((float)lastY);
             var labelSize = ImGui.CalcTextSize(valueText);
             
             labels.Add(new PositionedLabel(valueText, (float)lastY, color, pixelPos, labelSize, name));
@@ -415,9 +415,9 @@ public static class GraphValueLabels
     /// <param name="offsetX">Horizontal offset from the point. Default: 0</param>
     /// <param name="offsetY">Vertical offset from the point. Default: 0</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawValueLabel(double plotX, double plotY, float value, Vector3 color, float offsetX = 0f, float offsetY = 0f, GraphStyleConfig? style = null)
+    public static void DrawValueLabel(double plotX, double plotY, float value, Vector3 color, float offsetX = 0f, float offsetY = 0f, MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         
         var drawList = ImPlot.GetPlotDrawList();
         var pixelPos = ImPlot.PlotToPixels(plotX, plotY);
@@ -425,7 +425,7 @@ public static class GraphValueLabels
         // Apply offset
         var labelPos = new Vector2(pixelPos.X + offsetX, pixelPos.Y + offsetY);
         
-        var label = FormatUtils.FormatAbbreviated(value);
+        var label = MTFormatUtils.FormatAbbreviated(value);
         var labelSize = ImGui.CalcTextSize(label);
         
         var padding = style.ValueLabelPadding;
@@ -458,9 +458,9 @@ public static class GraphValueLabels
     /// <param name="baseOffsetX">Base horizontal offset. Default: 8</param>
     /// <param name="style">Optional style configuration.</param>
     [Obsolete("Use DrawCurrentValueLabels for better positioning at each series' latest point.")]
-    public static void DrawValueLabels(IReadOnlyList<(string Name, float Value, Vector3 Color)> labels, double plotX, float baseOffsetX = 8f, GraphStyleConfig? style = null)
+    public static void DrawValueLabels(IReadOnlyList<(string Name, float Value, Vector3 Color)> labels, double plotX, float baseOffsetX = 8f, MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         
         if (labels.Count == 0)
             return;
@@ -485,7 +485,7 @@ public static class GraphValueLabels
             // Stack labels vertically
             var labelY = pixelPos.Y + (i - sorted.Count / 2f) * rowHeight;
             
-            var label = $"{name}: {FormatUtils.FormatAbbreviated(value)}";
+            var label = $"{name}: {MTFormatUtils.FormatAbbreviated(value)}";
             var labelSize = ImGui.CalcTextSize(label);
             var padding = style.ValueLabelPadding;
             

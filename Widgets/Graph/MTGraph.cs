@@ -9,13 +9,13 @@ namespace MTGui.Graph;
 /// </summary>
 /// <remarks>
 /// This is the main graph component that orchestrates all the rendering utilities
-/// from GraphDrawing, GraphLegend, and GraphControls.
+/// from GraphDrawing, GraphLegend, and MTGraphControls.
 /// </remarks>
-public class ImPlotGraph
+public class MTGraph
 {
     #region Fields
     
-    private readonly ImPlotGraphConfig _config;
+    private readonly MTGraphConfig _config;
     
     /// <summary>
     /// Set of series names that are currently hidden.
@@ -41,19 +41,19 @@ public class ImPlotGraph
     /// <summary>
     /// Cached legend bounds from the previous frame for input blocking.
     /// </summary>
-    private GraphLegend.InsideLegendResult _cachedLegendResult;
+    private MTGraphLegend.InsideLegendResult _cachedLegendResult;
     
     /// <summary>
     /// Cached controls drawer bounds from the previous frame.
     /// </summary>
-    private GraphControls.ControlsDrawerResult _cachedControlsResult;
+    private MTGraphControls.ControlsDrawerResult _cachedControlsResult;
     
     // === Array pooling ===
     private readonly Dictionary<string, double[]> _pooledXArrays = new();
     private readonly Dictionary<string, double[]> _pooledYArrays = new();
     
-    // === PreparedGraphData caching ===
-    private PreparedGraphData? _cachedPreparedData;
+    // === MTPreparedGraphData caching ===
+    private MTPreparedGraphData? _cachedPreparedData;
     private IReadOnlyList<(string name, IReadOnlyList<(DateTime ts, float value)> samples)>? _lastSeriesData;
     private IReadOnlyList<(string name, IReadOnlyList<(DateTime ts, float value)> samples, Vector4? color)>? _lastSeriesDataWithColors;
     private int _lastHiddenSeriesHash;
@@ -61,7 +61,7 @@ public class ImPlotGraph
     private DateTime _lastPreparedDataTime;
     
     // === Groups ===
-    private IReadOnlyList<GraphSeriesGroup>? _groups;
+    private IReadOnlyList<MTGraphSeriesGroup>? _groups;
     
     #endregion
     
@@ -70,7 +70,7 @@ public class ImPlotGraph
     /// <summary>
     /// Event raised when auto-scroll settings change via the controls drawer.
     /// </summary>
-    public event Action<bool, int, TimeUnit, float>? OnAutoScrollSettingsChanged;
+    public event Action<bool, int, MTTimeUnit, float>? OnAutoScrollSettingsChanged;
     
     #endregion
     
@@ -79,7 +79,7 @@ public class ImPlotGraph
     /// <summary>
     /// Gets the configuration for this graph.
     /// </summary>
-    public ImPlotGraphConfig Config => _config;
+    public MTGraphConfig Config => _config;
     
     /// <summary>
     /// Gets or sets whether the mouse is over an overlay element (legend, controls drawer).
@@ -100,7 +100,7 @@ public class ImPlotGraph
     /// <summary>
     /// Gets or sets the groups for the legend. Groups can be toggled to show/hide all their member series.
     /// </summary>
-    public IReadOnlyList<GraphSeriesGroup>? Groups
+    public IReadOnlyList<MTGraphSeriesGroup>? Groups
     {
         get => _groups;
         set
@@ -116,17 +116,17 @@ public class ImPlotGraph
     #region Constructors
     
     /// <summary>
-    /// Creates a new ImPlotGraph with default configuration.
+    /// Creates a new MTGraph with default configuration.
     /// </summary>
-    public ImPlotGraph() : this(new ImPlotGraphConfig()) { }
+    public MTGraph() : this(new MTGraphConfig()) { }
     
     /// <summary>
-    /// Creates a new ImPlotGraph with custom configuration.
+    /// Creates a new MTGraph with custom configuration.
     /// </summary>
     /// <param name="config">The graph configuration.</param>
-    public ImPlotGraph(ImPlotGraphConfig config)
+    public MTGraph(MTGraphConfig config)
     {
-        _config = config ?? new ImPlotGraphConfig();
+        _config = config ?? new MTGraphConfig();
     }
     
     #endregion
@@ -161,7 +161,7 @@ public class ImPlotGraph
             return;
         }
         
-        PreparedGraphData data;
+        MTPreparedGraphData data;
         var needsRecompute = NeedsPreparedDataRecompute(series);
         
         if (needsRecompute)
@@ -200,7 +200,7 @@ public class ImPlotGraph
             return;
         }
         
-        PreparedGraphData data;
+        MTPreparedGraphData data;
         var needsRecompute = NeedsPreparedDataRecomputeWithColors(series);
         
         if (needsRecompute)
@@ -307,7 +307,7 @@ public class ImPlotGraph
     /// Checks if a series should be visible based on both direct visibility and group visibility.
     /// A series is hidden if it's directly hidden OR if any of its groups are hidden.
     /// </summary>
-    public bool IsSeriesEffectivelyHidden(GraphSeriesData series)
+    public bool IsSeriesEffectivelyHidden(MTGraphSeriesData series)
     {
         if (_hiddenSeries.Contains(series.Name))
             return true;
@@ -341,7 +341,7 @@ public class ImPlotGraph
     /// <summary>
     /// Core graph drawing method.
     /// </summary>
-    private unsafe void DrawGraph(PreparedGraphData data)
+    private unsafe void DrawGraph(MTPreparedGraphData data)
     {
         try
         {
@@ -349,7 +349,7 @@ public class ImPlotGraph
             
             // Reserve space for outside legend if needed
             var useOutsideLegend = _config.ShowLegend && 
-                                   _config.LegendPosition == LegendPosition.Outside && 
+                                   _config.LegendPosition == MTLegendPosition.Outside && 
                                    data.HasMultipleSeriesTotal;
             var legendWidth = useOutsideLegend ? _config.LegendWidth : 0f;
             var legendPadding = useOutsideLegend ? 5f : 0f;
@@ -361,8 +361,8 @@ public class ImPlotGraph
                            ImPlotFlags.NoBoxSelect | ImPlotFlags.NoMouseText | ImPlotFlags.Crosshairs;
             
             // Check if mouse is over overlay from previous frame
-            IsMouseOverOverlay = GraphLegend.IsMouseOverLegend(_cachedLegendResult) || 
-                                GraphControls.IsMouseOverDrawer(_cachedControlsResult);
+            IsMouseOverOverlay = MTGraphLegend.IsMouseOverLegend(_cachedLegendResult) || 
+                                MTGraphControls.IsMouseOverDrawer(_cachedControlsResult);
             
             if (IsMouseOverOverlay)
             {
@@ -370,7 +370,7 @@ public class ImPlotGraph
             }
             
             // Apply styling
-            ChartColors.PushChartStyle(_config.Style);
+            MTChartColors.PushChartStyle(_config.Style);
             
             // Set axis limits
             var plotCondition = _config.AutoScrollEnabled ? ImPlotCond.Always : ImPlotCond.Once;
@@ -397,9 +397,9 @@ public class ImPlotGraph
                 // Format axes
                 if (data.IsTimeBased && _config.ShowXAxisTimestamps)
                 {
-                    ImPlot.SetupAxisFormat(ImAxis.X1, GraphDrawing.XAxisTimeFormatter, (void*)data.StartTime.Ticks);
+                    ImPlot.SetupAxisFormat(ImAxis.X1, MTGraphDrawing.XAxisTimeFormatter, (void*)data.StartTime.Ticks);
                 }
-                ImPlot.SetupAxisFormat(ImAxis.Y1, GraphDrawing.YAxisFormatter);
+                ImPlot.SetupAxisFormat(ImAxis.Y1, MTGraphDrawing.YAxisFormatter);
                 
                 // Constrain axes
                 ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, 0, double.MaxValue);
@@ -426,12 +426,12 @@ public class ImPlotGraph
                     if (lastVisibleSeries != null && lastVisibleSeries.PointCount > 0)
                     {
                         var currentValue = lastVisibleSeries.YValues[lastVisibleSeries.PointCount - 1];
-                        GraphDrawing.DrawCurrentPriceLine(currentValue, _config.Style);
+                        MTGraphDrawing.DrawCurrentPriceLine(currentValue, _config.Style);
                     }
                 }
                 
                 // Draw value labels first to get their bounds for hover detection
-                List<GraphValueLabels.ValueLabelBounds>? valueLabelBounds = null;
+                List<MTGraphValueLabels.ValueLabelBounds>? valueLabelBounds = null;
                 var isHoveringValueLabel = false;
                 if (_config.ShowValueLabel)
                 {
@@ -466,18 +466,18 @@ public class ImPlotGraph
                     {
                         if (labelBounds.Contains(mousePos))
                         {
-                            var lines = new List<string> { $"{labelBounds.SeriesName}: {FormatUtils.FormatAbbreviated(labelBounds.Value)}" };
+                            var lines = new List<string> { $"{labelBounds.SeriesName}: {MTFormatUtils.FormatAbbreviated(labelBounds.Value)}" };
                             var color = new Vector4(labelBounds.Color.X, labelBounds.Color.Y, labelBounds.Color.Z, 1f);
-                            GraphTooltips.DrawTooltipBox(mousePos, lines.ToArray(), color, _config.Style);
+                            MTGraphTooltips.DrawTooltipBox(mousePos, lines.ToArray(), color, _config.Style);
                             break;
                         }
                     }
                 }
                 
                 // Draw inside legend if applicable
-                if (_config.ShowLegend && _config.LegendPosition != LegendPosition.Outside && data.HasMultipleSeriesTotal)
+                if (_config.ShowLegend && _config.LegendPosition != MTLegendPosition.Outside && data.HasMultipleSeriesTotal)
                 {
-                    _cachedLegendResult = GraphLegend.DrawInsideLegend(
+                    _cachedLegendResult = MTGraphLegend.DrawInsideLegend(
                         data,
                         _hiddenSeries,
                         _hiddenGroups,
@@ -491,13 +491,13 @@ public class ImPlotGraph
                 }
                 else
                 {
-                    _cachedLegendResult = GraphLegend.InsideLegendResult.Invalid;
+                    _cachedLegendResult = MTGraphLegend.InsideLegendResult.Invalid;
                 }
                 
                 // Draw controls drawer
                 if (_config.ShowControlsDrawer)
                 {
-                    _cachedControlsResult = GraphControls.DrawControlsDrawer(
+                    _cachedControlsResult = MTGraphControls.DrawControlsDrawer(
                         _controlsDrawerOpen,
                         _config.AutoScrollEnabled,
                         _config.AutoScrollTimeValue,
@@ -523,19 +523,19 @@ public class ImPlotGraph
                 }
                 else
                 {
-                    _cachedControlsResult = GraphControls.ControlsDrawerResult.Invalid;
+                    _cachedControlsResult = MTGraphControls.ControlsDrawerResult.Invalid;
                 }
                 
                 ImPlot.EndPlot();
             }
             
-            ChartColors.PopChartStyle();
+            MTChartColors.PopChartStyle();
             
             // Draw outside legend
             if (useOutsideLegend)
             {
                 ImGui.SameLine();
-                GraphLegend.DrawScrollableLegend(
+                MTGraphLegend.DrawScrollableLegend(
                     _config.PlotId,
                     data.Series,
                     data.Groups,
@@ -557,7 +557,7 @@ public class ImPlotGraph
     /// <summary>
     /// Draws a single series on the plot.
     /// </summary>
-    private unsafe void DrawSeries(GraphSeriesData series, PreparedGraphData data)
+    private unsafe void DrawSeries(MTGraphSeriesData series, MTPreparedGraphData data)
     {
         var colorVec4 = new Vector4(series.Color.X, series.Color.Y, series.Color.Z, 1f);
         ImPlot.SetNextLineStyle(colorVec4, _config.Style.LineWeight);
@@ -569,15 +569,15 @@ public class ImPlotGraph
             
             switch (_config.GraphType)
             {
-                case GraphType.Line:
+                case MTGraphType.Line:
                     ImPlot.PlotLine(series.Name, xPtr, yPtr, count);
                     break;
                     
-                case GraphType.Stairs:
+                case MTGraphType.Stairs:
                     ImPlot.PlotStairs(series.Name, xPtr, yPtr, count);
                     break;
                     
-                case GraphType.Bars:
+                case MTGraphType.Bars:
                     var barWidth = data.HasMultipleSeries 
                         ? data.TotalTimeSpan / count * 0.8 / data.Series.Count(s => s.Visible)
                         : 0.67;
@@ -585,11 +585,11 @@ public class ImPlotGraph
                     ImPlot.PlotBars(series.Name, xPtr, yPtr, count, barWidth);
                     break;
                     
-                case GraphType.StairsArea:
+                case MTGraphType.StairsArea:
                     DrawStairsArea(series, data, colorVec4, xPtr, yPtr, count);
                     break;
                     
-                case GraphType.Area:
+                case MTGraphType.Area:
                 default:
                     var fillAlpha = data.HasMultipleSeries ? _config.Style.MultiSeriesFillAlpha : _config.Style.FillAlpha + 0.25f;
                     ImPlot.SetNextFillStyle(new Vector4(series.Color.X, series.Color.Y, series.Color.Z, fillAlpha));
@@ -605,7 +605,7 @@ public class ImPlotGraph
     /// Draws a stairs/step chart with filled area below the line.
     /// Creates step-shaped data for the shaded region to match the stairs line.
     /// </summary>
-    private unsafe void DrawStairsArea(GraphSeriesData series, PreparedGraphData data, Vector4 colorVec4, double* xPtr, double* yPtr, int count)
+    private unsafe void DrawStairsArea(MTGraphSeriesData series, MTPreparedGraphData data, Vector4 colorVec4, double* xPtr, double* yPtr, int count)
     {
         if (count < 2)
         {
@@ -649,7 +649,7 @@ public class ImPlotGraph
     /// Draws crosshair and tooltip when hovering over the plot.
     /// Only shows tooltip when hovering near a series line or within a series area.
     /// </summary>
-    private void DrawHoverEffects(PreparedGraphData data)
+    private void DrawHoverEffects(MTPreparedGraphData data)
     {
         var mousePos = ImPlot.GetPlotMousePos();
         var mouseX = mousePos.X;
@@ -681,7 +681,7 @@ public class ImPlotGraph
                 var seriesMaxX = series.XValues[series.PointCount - 1];
                 
                 // Check if mouse is over this series based on graph type
-                if (_config.GraphType == GraphType.Area || _config.GraphType == GraphType.StairsArea)
+                if (_config.GraphType == MTGraphType.Area || _config.GraphType == MTGraphType.StairsArea)
                 {
                     // For area charts: check if mouse X is within the series data range
                     // and mouse Y is between 0 and the series value (within the filled area)
@@ -720,7 +720,7 @@ public class ImPlotGraph
         
         if (foundHoveredSeries)
         {
-            GraphDrawing.DrawCrosshair(mouseX, mouseY, nearestValue, _config.Style);
+            MTGraphDrawing.DrawCrosshair(mouseX, mouseY, nearestValue, _config.Style);
             
             // Draw tooltip for multi-series
             if (data.HasMultipleSeries)
@@ -736,9 +736,9 @@ public class ImPlotGraph
                 }
                 
                 // Add value for nearest series
-                lines.Add($"{nearestSeriesName}: {FormatUtils.FormatAbbreviated(nearestValue)}");
+                lines.Add($"{nearestSeriesName}: {MTFormatUtils.FormatAbbreviated(nearestValue)}");
                 
-                GraphTooltips.DrawTooltipBox(screenPos, lines.ToArray(), new Vector4(nearestColor.X, nearestColor.Y, nearestColor.Z, 1f), _config.Style);
+                MTGraphTooltips.DrawTooltipBox(screenPos, lines.ToArray(), new Vector4(nearestColor.X, nearestColor.Y, nearestColor.Z, 1f), _config.Style);
             }
         }
     }
@@ -746,7 +746,7 @@ public class ImPlotGraph
     /// <summary>
     /// Gets the Y value of a series at a given X position, interpolating for stairs/area charts.
     /// </summary>
-    private static double GetSeriesValueAtX(GraphSeriesData series, double x)
+    private static double GetSeriesValueAtX(MTGraphSeriesData series, double x)
     {
         if (series.PointCount == 0) return 0;
         if (series.PointCount == 1) return series.YValues[0];
@@ -772,7 +772,7 @@ public class ImPlotGraph
     /// <summary>
     /// Checks if the mouse position is near the series line within a pixel threshold.
     /// </summary>
-    private bool IsNearSeriesLine(GraphSeriesData series, double mouseX, double mouseY, float thresholdPixels)
+    private bool IsNearSeriesLine(MTGraphSeriesData series, double mouseX, double mouseY, float thresholdPixels)
     {
         if (series.PointCount == 0) return false;
         
@@ -782,7 +782,7 @@ public class ImPlotGraph
         
         // For stairs charts, use step behavior
         double seriesY;
-        if (_config.GraphType == GraphType.Stairs || _config.GraphType == GraphType.StairsArea)
+        if (_config.GraphType == MTGraphType.Stairs || _config.GraphType == MTGraphType.StairsArea)
         {
             seriesY = GetSeriesValueAtX(series, mouseX);
         }
@@ -817,7 +817,7 @@ public class ImPlotGraph
     /// Labels are colored to match their series and auto-adjust to prevent overlap.
     /// </summary>
     /// <returns>List of label bounds for hover detection.</returns>
-    private List<GraphValueLabels.ValueLabelBounds> DrawValueLabels(PreparedGraphData data)
+    private List<MTGraphValueLabels.ValueLabelBounds> DrawValueLabels(MTPreparedGraphData data)
     {
         var seriesData = new List<(string Name, double LastX, double LastY, Vector3 Color)>();
         
@@ -832,10 +832,10 @@ public class ImPlotGraph
         
         if (seriesData.Count > 0)
         {
-            return GraphValueLabels.DrawCurrentValueLabels(seriesData, _config.Style, _config.ValueLabelOffsetX, _config.ValueLabelOffsetY);
+            return MTGraphValueLabels.DrawCurrentValueLabels(seriesData, _config.Style, _config.ValueLabelOffsetX, _config.ValueLabelOffsetY);
         }
         
-        return new List<GraphValueLabels.ValueLabelBounds>();
+        return new List<MTGraphValueLabels.ValueLabelBounds>();
     }
     
     /// <summary>
@@ -855,7 +855,7 @@ public class ImPlotGraph
     /// <summary>
     /// Prepares index-based sample data for rendering.
     /// </summary>
-    private PreparedGraphData PrepareIndexBasedData(IReadOnlyList<float> samples)
+    private MTPreparedGraphData PrepareIndexBasedData(IReadOnlyList<float> samples)
     {
         var xValues = new double[samples.Count];
         var yValues = new double[samples.Count];
@@ -871,7 +871,7 @@ public class ImPlotGraph
             ? new Vector3(colors.Bullish.X, colors.Bullish.Y, colors.Bullish.Z)
             : new Vector3(colors.Bearish.X, colors.Bearish.Y, colors.Bearish.Z);
         
-        var series = new List<GraphSeriesData>
+        var series = new List<MTGraphSeriesData>
         {
             new()
             {
@@ -888,7 +888,7 @@ public class ImPlotGraph
         var xDataMax = (double)samples.Count;
         var xPadding = Math.Max(xDataMax * 0.05, 1.0);
         
-        return new PreparedGraphData
+        return new MTPreparedGraphData
         {
             Series = series,
             Groups = _groups,
@@ -905,13 +905,13 @@ public class ImPlotGraph
     /// <summary>
     /// Prepares time-based multi-series data for rendering.
     /// </summary>
-    private PreparedGraphData PrepareTimeBasedData(
+    private MTPreparedGraphData PrepareTimeBasedData(
         IReadOnlyList<(string name, IReadOnlyList<(DateTime ts, float value)> samples)> seriesData)
     {
         var (globalMinTime, totalTimeSpan) = CalculateTimeRange(seriesData);
-        var colors = ChartColors.GetSeriesColors(seriesData.Count, _config.Style.Colors);
+        var colors = MTChartColors.GetSeriesColors(seriesData.Count, _config.Style.Colors);
         
-        var series = new List<GraphSeriesData>();
+        var series = new List<MTGraphSeriesData>();
         for (var i = 0; i < seriesData.Count; i++)
         {
             var (name, samples) = seriesData[i];
@@ -930,7 +930,7 @@ public class ImPlotGraph
             xValues[samples.Count] = totalTimeSpan;
             yValues[samples.Count] = samples[^1].value;
             
-            series.Add(new GraphSeriesData
+            series.Add(new MTGraphSeriesData
             {
                 Name = name,
                 XValues = xValues,
@@ -945,7 +945,7 @@ public class ImPlotGraph
         var (xMin, xMax) = CalculateXLimits(totalTimeSpan);
         var (yMin, yMax) = CalculateYBounds(series, xMin, xMax);
         
-        return new PreparedGraphData
+        return new MTPreparedGraphData
         {
             Series = series,
             Groups = _groups,
@@ -962,7 +962,7 @@ public class ImPlotGraph
     /// <summary>
     /// Prepares time-based multi-series data with custom colors.
     /// </summary>
-    private PreparedGraphData PrepareTimeBasedDataWithColors(
+    private MTPreparedGraphData PrepareTimeBasedDataWithColors(
         IReadOnlyList<(string name, IReadOnlyList<(DateTime ts, float value)> samples, Vector4? color)> seriesData)
     {
         var globalMinTime = DateTime.MaxValue;
@@ -978,9 +978,9 @@ public class ImPlotGraph
             globalMinTime = DateTime.UtcNow.AddHours(-1);
         
         var totalTimeSpan = Math.Max(1, (globalMaxTime - globalMinTime).TotalSeconds);
-        var defaultColors = ChartColors.GetSeriesColors(seriesData.Count, _config.Style.Colors);
+        var defaultColors = MTChartColors.GetSeriesColors(seriesData.Count, _config.Style.Colors);
         
-        var series = new List<GraphSeriesData>();
+        var series = new List<MTGraphSeriesData>();
         var defaultColorIndex = 0;
         
         for (var i = 0; i < seriesData.Count; i++)
@@ -1005,7 +1005,7 @@ public class ImPlotGraph
                 ? new Vector3(customColor.Value.X, customColor.Value.Y, customColor.Value.Z)
                 : defaultColors[defaultColorIndex++ % defaultColors.Length];
             
-            series.Add(new GraphSeriesData
+            series.Add(new MTGraphSeriesData
             {
                 Name = name,
                 XValues = xValues,
@@ -1020,7 +1020,7 @@ public class ImPlotGraph
         var (xMin, xMax) = CalculateXLimits(totalTimeSpan);
         var (yMin, yMax) = CalculateYBounds(series, xMin, xMax);
         
-        return new PreparedGraphData
+        return new MTPreparedGraphData
         {
             Series = series,
             Groups = _groups,
@@ -1092,7 +1092,7 @@ public class ImPlotGraph
     }
     
     private (double yMin, double yMax) CalculateYBounds(
-        IReadOnlyList<GraphSeriesData> series, 
+        IReadOnlyList<MTGraphSeriesData> series, 
         double xMinVisible, 
         double xMaxVisible)
     {
@@ -1154,7 +1154,7 @@ public class ImPlotGraph
         return (yMin, yMax);
     }
     
-private void UpdateRealTimeLimits(PreparedGraphData data)
+private void UpdateRealTimeLimits(MTPreparedGraphData data)
     {
         // Update TotalTimeSpan to reflect current time for real-time visualization
         // This extends the last data point to "now", making the graph appear to continuously update

@@ -7,7 +7,7 @@ namespace MTGui.Graph;
 /// Controls drawer utilities for ImPlot graphs.
 /// Provides an interactive drawer panel with auto-scroll controls.
 /// </summary>
-public static class GraphControls
+public static class MTGraphControls
 {
     #region Time Unit Names
     
@@ -44,7 +44,7 @@ public static class GraphControls
         public readonly int AutoScrollTimeValue;
         
         /// <summary>Updated auto-scroll time unit.</summary>
-        public readonly TimeUnit AutoScrollTimeUnit;
+        public readonly MTTimeUnit AutoScrollTimeUnit;
         
         /// <summary>Updated auto-scroll now position (0-100%).</summary>
         public readonly float AutoScrollNowPosition;
@@ -58,7 +58,7 @@ public static class GraphControls
             bool isOpen,
             bool autoScrollEnabled,
             int autoScrollTimeValue,
-            TimeUnit autoScrollTimeUnit,
+            MTTimeUnit autoScrollTimeUnit,
             float autoScrollNowPosition,
             bool settingsChanged)
         {
@@ -73,7 +73,7 @@ public static class GraphControls
             SettingsChanged = settingsChanged;
         }
         
-        public static ControlsDrawerResult Invalid => new(Vector2.Zero, Vector2.Zero, false, false, 1, TimeUnit.Hours, 75f, false);
+        public static ControlsDrawerResult Invalid => new(Vector2.Zero, Vector2.Zero, false, false, 1, MTTimeUnit.Hours, 75f, false);
     }
     
     #endregion
@@ -87,7 +87,7 @@ public static class GraphControls
     /// <param name="isOpen">Whether the drawer is currently open.</param>
     /// <param name="autoScrollEnabled">Current auto-scroll enabled state.</param>
     /// <param name="autoScrollTimeValue">Current auto-scroll time value.</param>
-    /// <param name="autoScrollTimeUnit">Current auto-scroll time unit.</param>
+    /// <param name="AutoScrollTimeUnit">Current auto-scroll time unit.</param>
     /// <param name="autoScrollNowPosition">Current auto-scroll now position (0-100%).</param>
     /// <param name="style">Optional style configuration.</param>
     /// <returns>Result containing updated state and bounds.</returns>
@@ -95,11 +95,11 @@ public static class GraphControls
         bool isOpen,
         bool autoScrollEnabled,
         int autoScrollTimeValue,
-        TimeUnit autoScrollTimeUnit,
+        MTTimeUnit AutoScrollTimeUnit,
         float autoScrollNowPosition,
-        GraphStyleConfig? style = null)
+        MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
@@ -118,7 +118,7 @@ public static class GraphControls
         var settingsChanged = false;
         var newAutoScrollEnabled = autoScrollEnabled;
         var newAutoScrollTimeValue = autoScrollTimeValue;
-        var newAutoScrollTimeUnit = autoScrollTimeUnit;
+        var newAutoScrollTimeUnit = AutoScrollTimeUnit;
         var newAutoScrollNowPosition = autoScrollNowPosition;
         var newIsOpen = isOpen;
         
@@ -206,7 +206,7 @@ public static class GraphControls
             contentY += rowHeight;
             
             // Draw unit selector
-            var unitChanged = DrawUnitSelector(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, autoScrollTimeUnit, mousePos, style, out var newUnit);
+            var unitChanged = DrawUnitSelector(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, AutoScrollTimeUnit, mousePos, style, out var newUnit);
             if (unitChanged)
             {
                 newAutoScrollTimeUnit = newUnit;
@@ -244,7 +244,7 @@ public static class GraphControls
         float toggleButtonHeight,
         bool isOpen,
         Vector2 mousePos,
-        GraphStyleConfig style,
+        MTGraphStyleConfig style,
         ref bool newIsOpen)
     {
         var colors = style.Colors;
@@ -299,7 +299,7 @@ public static class GraphControls
         float drawerPadding,
         bool autoScrollEnabled,
         Vector2 mousePos,
-        GraphStyleConfig style)
+        MTGraphStyleConfig style)
     {
         var colors = style.Colors;
         var checkboxPos = new Vector2(contentX, contentY + (rowHeight - checkboxSize) / 2);
@@ -347,7 +347,7 @@ public static class GraphControls
         float drawerPadding,
         int currentValue,
         Vector2 mousePos,
-        GraphStyleConfig style,
+        MTGraphStyleConfig style,
         out int newValue)
     {
         var colors = style.Colors;
@@ -423,10 +423,10 @@ public static class GraphControls
         float rowHeight,
         float drawerWidth,
         float drawerPadding,
-        TimeUnit currentUnit,
+        MTTimeUnit currentUnit,
         Vector2 mousePos,
-        GraphStyleConfig style,
-        out TimeUnit newUnit)
+        MTGraphStyleConfig style,
+        out MTTimeUnit newUnit)
     {
         var colors = style.Colors;
         var spacing = style.DrawerElementSpacing;
@@ -465,7 +465,7 @@ public static class GraphControls
             
             if (unitBtnHovered && ImGui.IsMouseClicked(0))
             {
-                newUnit = (TimeUnit)i;
+                newUnit = (MTTimeUnit)i;
                 changed = true;
             }
         }
@@ -485,7 +485,7 @@ public static class GraphControls
         float drawerPadding,
         float currentPosition,
         Vector2 mousePos,
-        GraphStyleConfig style,
+        MTGraphStyleConfig style,
         out float newPosition)
     {
         var colors = style.Colors;

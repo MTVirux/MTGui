@@ -4,7 +4,7 @@ namespace MTGui.Graph;
 /// Represents a group of series that can be toggled together in the legend.
 /// A series can belong to multiple groups.
 /// </summary>
-public sealed class GraphSeriesGroup
+public sealed class MTGraphSeriesGroup
 {
     /// <summary>
     /// Display name for this group (shown in legend).

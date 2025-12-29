@@ -9,7 +9,7 @@ namespace MTGui.Graph;
 /// For tooltips, see <see cref="GraphTooltips"/>.
 /// For value labels, see <see cref="GraphValueLabels"/>.
 /// </summary>
-public static class GraphDrawing
+public static class MTGraphDrawing
 {
     #region Axis Formatters
     
@@ -48,7 +48,7 @@ public static class GraphDrawing
     /// </summary>
     public static readonly unsafe ImPlotFormatter YAxisFormatter = (double value, byte* buff, int size, void* userData) =>
     {
-        var formatted = FormatUtils.FormatAbbreviated(value);
+        var formatted = MTFormatUtils.FormatAbbreviated(value);
         var len = Math.Min(formatted.Length, size - 1);
         for (var i = 0; i < len; i++)
             buff[i] = (byte)formatted[i];
@@ -67,9 +67,9 @@ public static class GraphDrawing
     /// <param name="mouseY">Mouse Y position in plot coordinates.</param>
     /// <param name="valueAtMouse">The Y value to display in the label.</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawCrosshair(double mouseX, double mouseY, float valueAtMouse, GraphStyleConfig? style = null)
+    public static void DrawCrosshair(double mouseX, double mouseY, float valueAtMouse, MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
@@ -108,7 +108,7 @@ public static class GraphDrawing
         }
         
         // Draw value label on Y axis (clipped to plot area so it goes under the Y-axis)
-        var valueLabel = FormatUtils.FormatAbbreviated(valueAtMouse);
+        var valueLabel = MTFormatUtils.FormatAbbreviated(valueAtMouse);
         var labelSize = ImGui.CalcTextSize(valueLabel);
         var labelPos = new Vector2(hRight.X - labelSize.X - 6, hRight.Y - labelSize.Y / 2);
         
@@ -141,9 +141,9 @@ public static class GraphDrawing
     /// <param name="thickness">Line thickness. Default: 1</param>
     /// <param name="dashed">Whether to draw a dashed line. Default: false</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawPriceLine(double yValue, string label, Vector4 color, float thickness = 1f, bool dashed = false, GraphStyleConfig? style = null)
+    public static void DrawPriceLine(double yValue, string label, Vector4 color, float thickness = 1f, bool dashed = false, MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         
         var drawList = ImPlot.GetPlotDrawList();
         var plotLimits = ImPlot.GetPlotLimits();
@@ -197,11 +197,11 @@ public static class GraphDrawing
     /// </summary>
     /// <param name="yValue">The Y value (in plot coordinates) where the line should be drawn.</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawCurrentPriceLine(double yValue, GraphStyleConfig? style = null)
+    public static void DrawCurrentPriceLine(double yValue, MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         var colors = style.Colors;
-        var label = FormatUtils.FormatAbbreviated(yValue);
+        var label = MTFormatUtils.FormatAbbreviated(yValue);
         DrawPriceLine(yValue, label, colors.CurrentPriceLine, style.PriceLineThickness, dashed: true, style);
     }
     

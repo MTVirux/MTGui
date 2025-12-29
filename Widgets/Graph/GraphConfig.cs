@@ -1,9 +1,9 @@
 namespace MTGui.Graph;
 
 /// <summary>
-/// Configuration options for ImPlotGraph widget.
+/// Configuration options for MTGraph widget.
 /// </summary>
-public class ImPlotGraphConfig
+public class MTGraphConfig
 {
     /// <summary>
     /// The minimum value for the Y-axis. Default is 0.
@@ -58,7 +58,7 @@ public class ImPlotGraphConfig
     /// <summary>
     /// The position of the legend (inside or outside the graph).
     /// </summary>
-    public LegendPosition LegendPosition { get; set; } = LegendPosition.InsideTopLeft;
+    public MTLegendPosition LegendPosition { get; set; } = MTLegendPosition.InsideTopLeft;
     
     /// <summary>
     /// Maximum height of the inside legend as a percentage of plot height (10-80%).
@@ -68,7 +68,7 @@ public class ImPlotGraphConfig
     /// <summary>
     /// The type of graph to render (Area, Line, Stairs, Bars).
     /// </summary>
-    public GraphType GraphType { get; set; } = GraphType.Area;
+    public MTGraphType GraphType { get; set; } = MTGraphType.Area;
     
     /// <summary>
     /// Whether to show X-axis time labels with timestamps.
@@ -104,7 +104,7 @@ public class ImPlotGraphConfig
     /// <summary>
     /// The unit for auto-scroll time range.
     /// </summary>
-    public TimeUnit AutoScrollTimeUnit { get; set; } = TimeUnit.Hours;
+    public MTTimeUnit AutoScrollTimeUnit { get; set; } = MTTimeUnit.Hours;
     
     /// <summary>
     /// Calculates the auto-scroll time range in seconds.
@@ -133,23 +133,23 @@ public class ImPlotGraphConfig
     /// <summary>
     /// Style configuration for the graph.
     /// </summary>
-    public GraphStyleConfig Style { get; set; } = new();
+    public MTGraphStyleConfig Style { get; set; } = new();
 }
 
 /// <summary>
 /// Interface for settings classes that contain graph widget configuration.
-/// Implement this interface to enable automatic settings binding with ImPlotGraph.
+/// Implement this interface to enable automatic settings binding with MTGraph.
 /// </summary>
-public interface IGraphSettings
+public interface IMTGraphSettings
 {
     // Legend settings
     float LegendWidth { get; set; }
     float LegendHeightPercent { get; set; }
     bool ShowLegend { get; set; }
-    LegendPosition LegendPosition { get; set; }
+    MTLegendPosition LegendPosition { get; set; }
     
     // Graph type
-    GraphType GraphType { get; set; }
+    MTGraphType GraphType { get; set; }
     
     // Display settings
     bool ShowXAxisTimestamps { get; set; }
@@ -163,29 +163,29 @@ public interface IGraphSettings
     // Auto-scroll settings
     bool AutoScrollEnabled { get; set; }
     int AutoScrollTimeValue { get; set; }
-    TimeUnit AutoScrollTimeUnit { get; set; }
+    MTTimeUnit AutoScrollTimeUnit { get; set; }
     float AutoScrollNowPosition { get; set; }
     bool ShowControlsDrawer { get; set; }
     
     // Time range settings
     int TimeRangeValue { get; set; }
-    TimeUnit TimeRangeUnit { get; set; }
+    MTTimeUnit TimeRangeUnit { get; set; }
 }
 
 /// <summary>
-/// Default implementation of IGraphSettings.
-/// Used by tools that embed an ImPlotGraph to avoid duplicating settings definitions.
+/// Default implementation of IMTGraphSettings.
+/// Used by tools that embed an MTGraph to avoid duplicating settings definitions.
 /// </summary>
-public class GraphSettings : IGraphSettings
+public class MTGraphSettings : IMTGraphSettings
 {
     // Legend settings
     public float LegendWidth { get; set; } = 140f;
     public float LegendHeightPercent { get; set; } = 25f;
     public bool ShowLegend { get; set; } = true;
-    public LegendPosition LegendPosition { get; set; } = LegendPosition.Outside;
+    public MTLegendPosition LegendPosition { get; set; } = MTLegendPosition.Outside;
     
     // Graph type
-    public GraphType GraphType { get; set; } = GraphType.Area;
+    public MTGraphType GraphType { get; set; } = MTGraphType.Area;
     
     // Display settings
     public bool ShowXAxisTimestamps { get; set; } = true;
@@ -199,13 +199,13 @@ public class GraphSettings : IGraphSettings
     // Auto-scroll settings
     public bool AutoScrollEnabled { get; set; } = false;
     public int AutoScrollTimeValue { get; set; } = 1;
-    public TimeUnit AutoScrollTimeUnit { get; set; } = TimeUnit.Hours;
+    public MTTimeUnit AutoScrollTimeUnit { get; set; } = MTTimeUnit.Hours;
     public float AutoScrollNowPosition { get; set; } = 75f;
     public bool ShowControlsDrawer { get; set; } = true;
     
     // Time range settings
     public int TimeRangeValue { get; set; } = 7;
-    public TimeUnit TimeRangeUnit { get; set; } = TimeUnit.Days;
+    public MTTimeUnit TimeRangeUnit { get; set; } = MTTimeUnit.Days;
     
     /// <summary>
     /// Calculates the auto-scroll time range in seconds from value and unit.
@@ -218,7 +218,7 @@ public class GraphSettings : IGraphSettings
     /// </summary>
     public TimeSpan? GetTimeSpan()
     {
-        if (TimeRangeUnit == TimeUnit.All)
+        if (TimeRangeUnit == MTTimeUnit.All)
             return null;
             
         var seconds = TimeRangeUnit.ToSeconds(TimeRangeValue);
@@ -226,9 +226,9 @@ public class GraphSettings : IGraphSettings
     }
     
     /// <summary>
-    /// Copies all graph settings from another IGraphSettings instance.
+    /// Copies all graph settings from another IMTGraphSettings instance.
     /// </summary>
-    public void CopyFrom(IGraphSettings other)
+    public void CopyFrom(IMTGraphSettings other)
     {
         LegendWidth = other.LegendWidth;
         LegendHeightPercent = other.LegendHeightPercent;

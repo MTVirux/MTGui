@@ -6,7 +6,7 @@ namespace MTGui.Graph;
 /// <summary>
 /// Static utilities for drawing tooltips on ImPlot graphs.
 /// </summary>
-public static class GraphTooltips
+public static class MTGraphTooltips
 {
     /// <summary>
     /// Draws a styled tooltip box at the given position.
@@ -15,9 +15,9 @@ public static class GraphTooltips
     /// <param name="lines">Array of text lines to display.</param>
     /// <param name="accentColor">Color for the accent bar on the left side of the tooltip.</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawTooltipBox(Vector2 screenPos, string[] lines, Vector4 accentColor, GraphStyleConfig? style = null)
+    public static void DrawTooltipBox(Vector2 screenPos, string[] lines, Vector4 accentColor, MTGraphStyleConfig? style = null)
     {
-        style ??= GraphStyleConfig.Default;
+        style ??= MTGraphStyleConfig.Default;
         var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
@@ -76,7 +76,7 @@ public static class GraphTooltips
     /// <param name="text">Text to display.</param>
     /// <param name="accentColor">Color for the accent bar.</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawTooltip(Vector2 screenPos, string text, Vector4 accentColor, GraphStyleConfig? style = null)
+    public static void DrawTooltip(Vector2 screenPos, string text, Vector4 accentColor, MTGraphStyleConfig? style = null)
     {
         DrawTooltipBox(screenPos, new[] { text }, accentColor, style);
     }
