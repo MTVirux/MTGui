@@ -8,7 +8,7 @@ namespace MTGui.Table;
 /// Static helper methods for table rendering that can be used by any table implementation.
 /// These provide common functionality like aligned cell rendering, standard table flags, and color options.
 /// </summary>
-public static class TableHelpers
+public static class MTTableHelpers
 {
     /// <summary>
     /// Default color used for color pickers when no custom color is set.
@@ -38,8 +38,8 @@ public static class TableHelpers
     /// <param name="color">Optional text color.</param>
     public static void DrawAlignedCellText(
         string text,
-        TableHorizontalAlignment hAlign,
-        TableVerticalAlignment vAlign,
+        MTTableHorizontalAlignment hAlign,
+        MTTableVerticalAlignment vAlign,
         Vector4? color = null)
     {
         var textSize = ImGui.CalcTextSize(text);
@@ -48,15 +48,15 @@ public static class TableHelpers
         
         float offsetX = hAlign switch
         {
-            TableHorizontalAlignment.Center => (cellSize.X - textSize.X) * 0.5f,
-            TableHorizontalAlignment.Right => cellSize.X - textSize.X,
+            MTTableHorizontalAlignment.Center => (cellSize.X - textSize.X) * 0.5f,
+            MTTableHorizontalAlignment.Right => cellSize.X - textSize.X,
             _ => 0f
         };
         
         float offsetY = vAlign switch
         {
-            TableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
-            TableVerticalAlignment.Bottom => style.CellPadding.Y,
+            MTTableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
+            MTTableVerticalAlignment.Bottom => style.CellPadding.Y,
             _ => 0f
         };
         
@@ -86,8 +86,8 @@ public static class TableHelpers
     /// <param name="color">Optional text color.</param>
     public static void DrawAlignedHeaderCell(
         string label,
-        TableHorizontalAlignment hAlign,
-        TableVerticalAlignment vAlign,
+        MTTableHorizontalAlignment hAlign,
+        MTTableVerticalAlignment vAlign,
         bool sortable = false,
         Vector4? color = null)
     {
@@ -100,15 +100,15 @@ public static class TableHelpers
         
         float offsetX = hAlign switch
         {
-            TableHorizontalAlignment.Center => (effectiveCellWidth - textSize.X) * 0.5f,
-            TableHorizontalAlignment.Right => effectiveCellWidth - textSize.X,
+            MTTableHorizontalAlignment.Center => (effectiveCellWidth - textSize.X) * 0.5f,
+            MTTableHorizontalAlignment.Right => effectiveCellWidth - textSize.X,
             _ => 0f
         };
         
         float offsetY = vAlign switch
         {
-            TableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
-            TableVerticalAlignment.Bottom => style.CellPadding.Y,
+            MTTableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
+            MTTableVerticalAlignment.Bottom => style.CellPadding.Y,
             _ => 0f
         };
         
@@ -226,24 +226,24 @@ public static class TableHelpers
     public static bool DrawAlignmentCombos(
         string horizontalLabel,
         string verticalLabel,
-        TableHorizontalAlignment hAlign,
-        TableVerticalAlignment vAlign,
-        Action<TableHorizontalAlignment> setHAlign,
-        Action<TableVerticalAlignment> setVAlign)
+        MTTableHorizontalAlignment hAlign,
+        MTTableVerticalAlignment vAlign,
+        Action<MTTableHorizontalAlignment> setHAlign,
+        Action<MTTableVerticalAlignment> setVAlign)
     {
         var changed = false;
         
         var hAlignInt = (int)hAlign;
         if (ImGui.Combo(horizontalLabel, ref hAlignInt, "Left\0Center\0Right\0"))
         {
-            setHAlign((TableHorizontalAlignment)hAlignInt);
+            setHAlign((MTTableHorizontalAlignment)hAlignInt);
             changed = true;
         }
         
         var vAlignInt = (int)vAlign;
         if (ImGui.Combo(verticalLabel, ref vAlignInt, "Top\0Center\0Bottom\0"))
         {
-            setVAlign((TableVerticalAlignment)vAlignInt);
+            setVAlign((MTTableVerticalAlignment)vAlignInt);
             changed = true;
         }
         
@@ -263,6 +263,6 @@ public static class TableHelpers
             return value.ToString("N0");
         }
         
-        return FormatUtils.FormatAbbreviated(value);
+        return MTFormatUtils.FormatAbbreviated(value);
     }
 }

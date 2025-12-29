@@ -3,7 +3,7 @@ namespace MTGui.Table;
 /// <summary>
 /// Horizontal alignment options for table cell content.
 /// </summary>
-public enum TableHorizontalAlignment
+public enum MTTableHorizontalAlignment
 {
     /// <summary>Align content to the left of the cell.</summary>
     Left,
@@ -16,7 +16,7 @@ public enum TableHorizontalAlignment
 /// <summary>
 /// Vertical alignment options for table cell content.
 /// </summary>
-public enum TableVerticalAlignment
+public enum MTTableVerticalAlignment
 {
     /// <summary>Align content to the top of the cell.</summary>
     Top,

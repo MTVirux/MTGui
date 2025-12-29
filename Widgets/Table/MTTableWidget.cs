@@ -10,13 +10,13 @@ namespace MTGui.Table;
 /// cell content rendering to the caller via delegates.
 /// </summary>
 /// <typeparam name="TRow">The type of data for each row.</typeparam>
-public class GenericTableWidget<TRow>
+public class MTTableWidget<TRow>
 {
     private readonly string _tableId;
     private readonly string _noDataText;
     
     // Settings binding
-    private IGenericTableSettings? _boundSettings;
+    private IMTTableSettings? _boundSettings;
     private Action? _onSettingsChanged;
     private string _settingsName = "Table Settings";
     
@@ -38,7 +38,7 @@ public class GenericTableWidget<TRow>
     /// </summary>
     /// <param name="row">The row data.</param>
     /// <param name="context">The cell render context with row/column indices.</param>
-    public delegate void CellRenderer(TRow row, CellRenderContext context);
+    public delegate void CellRenderer(TRow row, MTCellRenderContext context);
     
     /// <summary>
     /// Delegate for getting a sortable value from a row for a specific column.
@@ -50,11 +50,11 @@ public class GenericTableWidget<TRow>
     public delegate IComparable? SortKeySelector(TRow row, int columnIndex);
     
     /// <summary>
-    /// Creates a new GenericTableWidget.
+    /// Creates a new MTTableWidget.
     /// </summary>
     /// <param name="tableId">Unique ID for ImGui table identification.</param>
     /// <param name="noDataText">Text to display when there is no data.</param>
-    public GenericTableWidget(string tableId, string noDataText = "No data available.")
+    public MTTableWidget(string tableId, string noDataText = "No data available.")
     {
         _tableId = tableId;
         _noDataText = noDataText;
@@ -63,11 +63,11 @@ public class GenericTableWidget<TRow>
     /// <summary>
     /// Binds this widget to a settings object for automatic synchronization.
     /// </summary>
-    /// <param name="settings">The settings object implementing IGenericTableSettings.</param>
+    /// <param name="settings">The settings object implementing IMTTableSettings.</param>
     /// <param name="onSettingsChanged">Callback when settings are changed (e.g., to trigger config save).</param>
     /// <param name="settingsName">Display name for the settings section.</param>
     public void BindSettings(
-        IGenericTableSettings settings,
+        IMTTableSettings settings,
         Action? onSettingsChanged = null,
         string settingsName = "Table Settings")
     {
@@ -86,14 +86,14 @@ public class GenericTableWidget<TRow>
     /// <param name="settings">Optional settings override. If null, uses bound settings.</param>
     /// <param name="height">Optional explicit height. If 0, uses available height.</param>
     public void Draw(
-        IReadOnlyList<GenericTableColumn> columns,
+        IReadOnlyList<MTTableColumn> columns,
         IReadOnlyList<TRow> rows,
         CellRenderer cellRenderer,
         SortKeySelector? sortKeySelector = null,
-        IGenericTableSettings? settings = null,
+        IMTTableSettings? settings = null,
         float height = 0f)
     {
-        settings ??= _boundSettings ?? new GenericTableSettings();
+        settings ??= _boundSettings ?? new MTTableSettings();
         
         if (columns.Count == 0)
         {
@@ -205,7 +205,7 @@ public class GenericTableWidget<TRow>
                 {
                     ImGui.TableNextColumn();
                     
-                    var context = new CellRenderContext
+                    var context = new MTCellRenderContext
                     {
                         RowIndex = rowIdx,
                         ColumnIndex = colIdx,
@@ -225,7 +225,7 @@ public class GenericTableWidget<TRow>
     private List<TRow> GetSortedRows(
         IReadOnlyList<TRow> rows,
         SortKeySelector? sortKeySelector,
-        IGenericTableSettings settings)
+        IMTTableSettings settings)
     {
         if (!settings.Sortable || sortKeySelector == null)
             return rows.ToList();
@@ -271,8 +271,8 @@ public class GenericTableWidget<TRow>
     /// </summary>
     private static void DrawAlignedHeaderCell(
         string label,
-        TableHorizontalAlignment hAlign,
-        TableVerticalAlignment vAlign,
+        MTTableHorizontalAlignment hAlign,
+        MTTableVerticalAlignment vAlign,
         bool sortable,
         Vector4? color)
     {
@@ -287,16 +287,16 @@ public class GenericTableWidget<TRow>
         // Calculate horizontal offset
         float offsetX = hAlign switch
         {
-            TableHorizontalAlignment.Center => (effectiveCellWidth - textSize.X) * 0.5f,
-            TableHorizontalAlignment.Right => effectiveCellWidth - textSize.X,
+            MTTableHorizontalAlignment.Center => (effectiveCellWidth - textSize.X) * 0.5f,
+            MTTableHorizontalAlignment.Right => effectiveCellWidth - textSize.X,
             _ => 0f
         };
         
         // Calculate vertical offset
         float offsetY = vAlign switch
         {
-            TableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
-            TableVerticalAlignment.Bottom => style.CellPadding.Y,
+            MTTableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
+            MTTableVerticalAlignment.Bottom => style.CellPadding.Y,
             _ => 0f
         };
         
@@ -355,13 +355,13 @@ public class GenericTableWidget<TRow>
         }
         
         ImGui.Spacing();
-        if (TreeHelpers.DrawSection("Data Column Alignment", true))
+        if (MTTreeHelpers.DrawSection("Data Column Alignment", true))
         {
             // Data horizontal alignment
             var hAlign = (int)settings.DataHorizontalAlignment;
             if (ImGui.Combo("Data Horizontal", ref hAlign, "Left\0Center\0Right\0"))
             {
-                settings.DataHorizontalAlignment = (TableHorizontalAlignment)hAlign;
+                settings.DataHorizontalAlignment = (MTTableHorizontalAlignment)hAlign;
                 changed = true;
             }
         
@@ -369,20 +369,20 @@ public class GenericTableWidget<TRow>
             var vAlign = (int)settings.DataVerticalAlignment;
             if (ImGui.Combo("Data Vertical", ref vAlign, "Top\0Center\0Bottom\0"))
             {
-                settings.DataVerticalAlignment = (TableVerticalAlignment)vAlign;
+                settings.DataVerticalAlignment = (MTTableVerticalAlignment)vAlign;
                 changed = true;
             }
-            TreeHelpers.EndSection();
+            MTTreeHelpers.EndSection();
         }
         
         ImGui.Spacing();
-        if (TreeHelpers.DrawSection("Header Row Alignment"))
+        if (MTTreeHelpers.DrawSection("Header Row Alignment"))
         {
             // Header horizontal alignment
             var headerHAlign = (int)settings.HeaderHorizontalAlignment;
             if (ImGui.Combo("Header Horizontal", ref headerHAlign, "Left\0Center\0Right\0"))
             {
-                settings.HeaderHorizontalAlignment = (TableHorizontalAlignment)headerHAlign;
+                settings.HeaderHorizontalAlignment = (MTTableHorizontalAlignment)headerHAlign;
                 changed = true;
             }
         
@@ -390,24 +390,24 @@ public class GenericTableWidget<TRow>
             var headerVAlign = (int)settings.HeaderVerticalAlignment;
             if (ImGui.Combo("Header Vertical", ref headerVAlign, "Top\0Center\0Bottom\0"))
             {
-                settings.HeaderVerticalAlignment = (TableVerticalAlignment)headerVAlign;
+                settings.HeaderVerticalAlignment = (MTTableVerticalAlignment)headerVAlign;
                 changed = true;
             }
-            TreeHelpers.EndSection();
+            MTTreeHelpers.EndSection();
         }
         
         ImGui.Spacing();
-        if (TreeHelpers.DrawSection("Row Colors"))
+        if (MTTreeHelpers.DrawSection("Row Colors"))
         {
             // Header color
-            changed |= TableHelpers.DrawColorOption("Header", settings.HeaderColor, c => settings.HeaderColor = c);
+            changed |= MTTableHelpers.DrawColorOption("Header", settings.HeaderColor, c => settings.HeaderColor = c);
         
             // Even row color
-            changed |= TableHelpers.DrawColorOption("Even Rows", settings.EvenRowColor, c => settings.EvenRowColor = c);
+            changed |= MTTableHelpers.DrawColorOption("Even Rows", settings.EvenRowColor, c => settings.EvenRowColor = c);
         
             // Odd row color
-            changed |= TableHelpers.DrawColorOption("Odd Rows", settings.OddRowColor, c => settings.OddRowColor = c);
-            TreeHelpers.EndSection();
+            changed |= MTTableHelpers.DrawColorOption("Odd Rows", settings.OddRowColor, c => settings.OddRowColor = c);
+            MTTreeHelpers.EndSection();
         }
         
         if (changed)
@@ -428,19 +428,19 @@ public class GenericTableWidget<TRow>
     /// </summary>
     public static void DrawAlignedText(
         string text,
-        TableHorizontalAlignment hAlign,
-        TableVerticalAlignment vAlign,
+        MTTableHorizontalAlignment hAlign,
+        MTTableVerticalAlignment vAlign,
         Vector4? color = null)
     {
-        TableHelpers.DrawAlignedCellText(text, hAlign, vAlign, color);
+        MTTableHelpers.DrawAlignedCellText(text, hAlign, vAlign, color);
     }
     
     /// <summary>
     /// Helper method to draw text using settings alignment.
     /// </summary>
-    public static void DrawAlignedText(string text, IGenericTableSettings settings, Vector4? color = null)
+    public static void DrawAlignedText(string text, IMTTableSettings settings, Vector4? color = null)
     {
-        TableHelpers.DrawAlignedCellText(text, settings.DataHorizontalAlignment, settings.DataVerticalAlignment, color);
+        MTTableHelpers.DrawAlignedCellText(text, settings.DataHorizontalAlignment, settings.DataVerticalAlignment, color);
     }
     
     #endregion

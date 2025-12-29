@@ -4,7 +4,7 @@ namespace MTGui.Table;
 /// Settings interface for the generic table widget.
 /// Implement this interface in your settings class to enable automatic settings binding.
 /// </summary>
-public interface IGenericTableSettings
+public interface IMTTableSettings
 {
     /// <summary>
     /// Whether to allow sorting by clicking column headers.
@@ -39,22 +39,22 @@ public interface IGenericTableSettings
     /// <summary>
     /// Horizontal alignment for data cell content.
     /// </summary>
-    TableHorizontalAlignment DataHorizontalAlignment { get; set; }
+    MTTableHorizontalAlignment DataHorizontalAlignment { get; set; }
     
     /// <summary>
     /// Vertical alignment for data cell content.
     /// </summary>
-    TableVerticalAlignment DataVerticalAlignment { get; set; }
+    MTTableVerticalAlignment DataVerticalAlignment { get; set; }
     
     /// <summary>
     /// Horizontal alignment for header row content.
     /// </summary>
-    TableHorizontalAlignment HeaderHorizontalAlignment { get; set; }
+    MTTableHorizontalAlignment HeaderHorizontalAlignment { get; set; }
     
     /// <summary>
     /// Vertical alignment for header row content.
     /// </summary>
-    TableVerticalAlignment HeaderVerticalAlignment { get; set; }
+    MTTableVerticalAlignment HeaderVerticalAlignment { get; set; }
     
     /// <summary>
     /// Whether to use alternating row colors.
@@ -68,9 +68,9 @@ public interface IGenericTableSettings
 }
 
 /// <summary>
-/// Default implementation of IGenericTableSettings.
+/// Default implementation of IMTTableSettings.
 /// </summary>
-public class GenericTableSettings : IGenericTableSettings
+public class MTTableSettings : IMTTableSettings
 {
     /// <inheritdoc/>
     public bool Sortable { get; set; } = true;
@@ -91,16 +91,16 @@ public class GenericTableSettings : IGenericTableSettings
     public Vector4? OddRowColor { get; set; }
     
     /// <inheritdoc/>
-    public TableHorizontalAlignment DataHorizontalAlignment { get; set; } = TableHorizontalAlignment.Left;
+    public MTTableHorizontalAlignment DataHorizontalAlignment { get; set; } = MTTableHorizontalAlignment.Left;
     
     /// <inheritdoc/>
-    public TableVerticalAlignment DataVerticalAlignment { get; set; } = TableVerticalAlignment.Top;
+    public MTTableVerticalAlignment DataVerticalAlignment { get; set; } = MTTableVerticalAlignment.Top;
     
     /// <inheritdoc/>
-    public TableHorizontalAlignment HeaderHorizontalAlignment { get; set; } = TableHorizontalAlignment.Left;
+    public MTTableHorizontalAlignment HeaderHorizontalAlignment { get; set; } = MTTableHorizontalAlignment.Left;
     
     /// <inheritdoc/>
-    public TableVerticalAlignment HeaderVerticalAlignment { get; set; } = TableVerticalAlignment.Top;
+    public MTTableVerticalAlignment HeaderVerticalAlignment { get; set; } = MTTableVerticalAlignment.Top;
     
     /// <inheritdoc/>
     public bool UseAlternatingRowColors { get; set; } = true;
@@ -112,7 +112,7 @@ public class GenericTableSettings : IGenericTableSettings
 /// <summary>
 /// Column definition for a generic table.
 /// </summary>
-public class GenericTableColumn
+public class MTTableColumn
 {
     /// <summary>
     /// Column header text.
@@ -149,7 +149,7 @@ public class GenericTableColumn
 /// <summary>
 /// Context passed to cell rendering delegates.
 /// </summary>
-public class CellRenderContext
+public class MTCellRenderContext
 {
     /// <summary>
     /// The row index (0-based, after sorting).
@@ -169,14 +169,14 @@ public class CellRenderContext
     /// <summary>
     /// The table settings.
     /// </summary>
-    public required IGenericTableSettings Settings { get; init; }
+    public required IMTTableSettings Settings { get; init; }
 }
 
 /// <summary>
 /// Generic base class for merged column groups.
 /// Represents a group of columns that display aggregated/summed values as a single column.
 /// </summary>
-public class MergedColumnGroupBase
+public class MTMergedColumnGroupBase
 {
     /// <summary>
     /// Custom display name for the merged column header.
@@ -204,7 +204,7 @@ public class MergedColumnGroupBase
 /// Represents a group of rows that display aggregated/summed values as a single row.
 /// </summary>
 /// <typeparam name="TKey">The type of key used to identify rows (e.g., string, int, ulong).</typeparam>
-public class MergedRowGroupBase<TKey>
+public class MTMergedRowGroupBase<TKey>
 {
     /// <summary>
     /// Custom display name for the merged row.
