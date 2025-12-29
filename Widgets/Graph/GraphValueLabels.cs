@@ -155,7 +155,8 @@ public static class GraphValueLabels
         // Apply offsetX to the starting position
         var labelPositions = AssignLabelPositions(labels, padding, style.ValueLabelMinSpacing, 
             maxDataX + style.ValueLabelHorizontalOffset + offsetX, rightEdge, maxLabelWidth,
-            plotPos.Y + offsetY, plotPos.Y + plotSize.Y);
+            plotPos.Y + offsetY, plotPos.Y + plotSize.Y,
+            style.ValueLabelStepsPerRow);
         
         // Sort by value ascending so higher values are drawn last (on top)
         var sortedForDrawing = labelPositions.OrderBy(lp => lp.Label.Value).ToList();
@@ -176,7 +177,7 @@ public static class GraphValueLabels
             var bgMin = labelPos;
             
             // Draw connecting line from data point to label
-            var lineColor = ImGui.GetColorU32(new Vector4(label.Color.X, label.Color.Y, label.Color.Z, 0.4f));
+            var lineColor = ImGui.GetColorU32(new Vector4(label.Color.X, label.Color.Y, label.Color.Z, style.ValueLabelLineAlpha));
             var lineStart = label.DataPoint;
             var lineEnd = new Vector2(bgMin.X, labelY);
             
@@ -207,8 +208,8 @@ public static class GraphValueLabels
             drawList.AddRectFilled(bgMin, bgMax, ImGui.GetColorU32(bgColor), style.ValueLabelRounding);
             
             // Border in series color
-            var borderColor = new Vector4(label.Color.X, label.Color.Y, label.Color.Z, 0.7f);
-            drawList.AddRect(bgMin, bgMax, ImGui.GetColorU32(borderColor), style.ValueLabelRounding, 0, 1f);
+            var borderColor = new Vector4(label.Color.X, label.Color.Y, label.Color.Z, style.ValueLabelBorderAlpha);
+            drawList.AddRect(bgMin, bgMax, ImGui.GetColorU32(borderColor), style.ValueLabelRounding, 0, style.ValueLabelBorderThickness);
             
             // Text in series color
             var textColor = new Vector4(label.Color.X, label.Color.Y, label.Color.Z, 1f);
@@ -238,16 +239,13 @@ public static class GraphValueLabels
         float rightEdge,
         float maxLabelWidth,
         float minY,
-        float maxY)
+        float maxY,
+        int stepsPerRow)
     {
         if (labels.Count == 0)
             return new List<(PositionedLabel, float, float)>();
         
         var result = new List<(PositionedLabel Label, float X, float Y)>();
-        
-        // Configure stair pattern step granularity:
-        // 2 = half steps, 4 = quarter steps, 8 = eighth steps, etc.
-        const int stepsPerRow = 8;
         
         // Find the highest value label (first in the list since sorted by value desc)
         var highestLabel = labels[0];

@@ -18,6 +18,7 @@ public static class GraphTooltips
     public static void DrawTooltipBox(Vector2 screenPos, string[] lines, Vector4 accentColor, GraphStyleConfig? style = null)
     {
         style ??= GraphStyleConfig.Default;
+        var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
         
@@ -42,13 +43,13 @@ public static class GraphTooltips
         drawList.AddRectFilled(
             boxPos,
             new Vector2(boxPos.X + boxWidth, boxPos.Y + boxHeight),
-            ImGui.GetColorU32(ChartColors.TooltipBackground), style.TooltipRounding);
+            ImGui.GetColorU32(colors.TooltipBackground), style.TooltipRounding);
         
         // Border
         drawList.AddRect(
             boxPos,
             new Vector2(boxPos.X + boxWidth, boxPos.Y + boxHeight),
-            ImGui.GetColorU32(ChartColors.TooltipBorder), style.TooltipRounding, 0, 1f);
+            ImGui.GetColorU32(colors.TooltipBorder), style.TooltipRounding, 0, 1f);
         
         // Accent bar on left
         drawList.AddRectFilled(
@@ -62,7 +63,7 @@ public static class GraphTooltips
         {
             drawList.AddText(
                 new Vector2(boxPos.X + padding + style.TooltipAccentWidth + 1, textY), 
-                ImGui.GetColorU32(ChartColors.TextPrimary), 
+                ImGui.GetColorU32(colors.TextPrimary), 
                 line);
             textY += ImGui.CalcTextSize(line).Y + 2f;
         }

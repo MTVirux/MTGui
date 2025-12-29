@@ -100,6 +100,7 @@ public static class GraphControls
         GraphStyleConfig? style = null)
     {
         style ??= GraphStyleConfig.Default;
+        var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
         var plotPos = ImPlot.GetPlotPos();
@@ -133,7 +134,7 @@ public static class GraphControls
         var drawerHeight = drawerPadding * 2 + drawerContentHeight;
         
         // Margin from plot edges
-        const float margin = 10f;
+        var margin = style.DrawerMargin;
         
         // Position toggle button at top-right corner of plot, clamped within plot area
         var toggleButtonPos = new Vector2(
@@ -155,7 +156,7 @@ public static class GraphControls
         var mousePos = ImGui.GetMousePos();
         
         // Draw toggle button
-        DrawToggleButton(drawList, toggleButtonPos, toggleButtonWidth, toggleButtonHeight, isOpen, mousePos, ref newIsOpen);
+        DrawToggleButton(drawList, toggleButtonPos, toggleButtonWidth, toggleButtonHeight, isOpen, mousePos, style, ref newIsOpen);
         
         // Calculate bounds
         Vector2 boundsMin, boundsMax;
@@ -176,8 +177,8 @@ public static class GraphControls
         }
         
         // Draw drawer background
-        var drawerBgColor = ImGui.GetColorU32(new Vector4(ChartColors.FrameBackground.X, ChartColors.FrameBackground.Y, ChartColors.FrameBackground.Z, 0.92f));
-        var drawerBorderColor = ImGui.GetColorU32(ChartColors.AxisLine);
+        var drawerBgColor = ImGui.GetColorU32(new Vector4(colors.FrameBackground.X, colors.FrameBackground.Y, colors.FrameBackground.Z, 0.92f));
+        var drawerBorderColor = ImGui.GetColorU32(colors.AxisLine);
         
         drawList.AddRectFilled(drawerPos, new Vector2(drawerPos.X + clampedDrawerWidth, drawerPos.Y + drawerHeight), drawerBgColor, 4f);
         drawList.AddRect(drawerPos, new Vector2(drawerPos.X + clampedDrawerWidth, drawerPos.Y + drawerHeight), drawerBorderColor, 4f);
@@ -186,7 +187,7 @@ public static class GraphControls
         var contentY = drawerPos.Y + drawerPadding;
         
         // Draw Auto-Scroll checkbox
-        if (DrawAutoScrollCheckbox(drawList, contentX, contentY, rowHeight, checkboxSize, clampedDrawerWidth, drawerPadding, autoScrollEnabled, mousePos))
+        if (DrawAutoScrollCheckbox(drawList, contentX, contentY, rowHeight, checkboxSize, clampedDrawerWidth, drawerPadding, autoScrollEnabled, mousePos, style))
         {
             newAutoScrollEnabled = !autoScrollEnabled;
             settingsChanged = true;
@@ -196,7 +197,7 @@ public static class GraphControls
         if (autoScrollEnabled)
         {
             // Draw value controls (- value +)
-            var valueChanged = DrawValueControls(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, autoScrollTimeValue, mousePos, out var newValue);
+            var valueChanged = DrawValueControls(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, autoScrollTimeValue, mousePos, style, out var newValue);
             if (valueChanged)
             {
                 newAutoScrollTimeValue = newValue;
@@ -205,7 +206,7 @@ public static class GraphControls
             contentY += rowHeight;
             
             // Draw unit selector
-            var unitChanged = DrawUnitSelector(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, autoScrollTimeUnit, mousePos, out var newUnit);
+            var unitChanged = DrawUnitSelector(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, autoScrollTimeUnit, mousePos, style, out var newUnit);
             if (unitChanged)
             {
                 newAutoScrollTimeUnit = newUnit;
@@ -214,7 +215,7 @@ public static class GraphControls
             contentY += rowHeight;
             
             // Draw position slider
-            var positionChanged = DrawPositionSlider(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, autoScrollNowPosition, mousePos, out var newPosition);
+            var positionChanged = DrawPositionSlider(drawList, contentX, contentY, rowHeight, clampedDrawerWidth, drawerPadding, autoScrollNowPosition, mousePos, style, out var newPosition);
             if (positionChanged)
             {
                 newAutoScrollNowPosition = newPosition;
@@ -243,16 +244,18 @@ public static class GraphControls
         float toggleButtonHeight,
         bool isOpen,
         Vector2 mousePos,
+        GraphStyleConfig style,
         ref bool newIsOpen)
     {
-        var buttonBgColor = ImGui.GetColorU32(new Vector4(ChartColors.FrameBackground.X, ChartColors.FrameBackground.Y, ChartColors.FrameBackground.Z, 0.9f));
-        var buttonBorderColor = ImGui.GetColorU32(ChartColors.AxisLine);
+        var colors = style.Colors;
+        var buttonBgColor = ImGui.GetColorU32(new Vector4(colors.FrameBackground.X, colors.FrameBackground.Y, colors.FrameBackground.Z, 0.9f));
+        var buttonBorderColor = ImGui.GetColorU32(colors.AxisLine);
         var buttonHovered = mousePos.X >= toggleButtonPos.X && mousePos.X <= toggleButtonPos.X + toggleButtonWidth &&
                            mousePos.Y >= toggleButtonPos.Y && mousePos.Y <= toggleButtonPos.Y + toggleButtonHeight;
         
         if (buttonHovered)
         {
-            buttonBgColor = ImGui.GetColorU32(new Vector4(ChartColors.GridLine.X, ChartColors.GridLine.Y, ChartColors.GridLine.Z, 0.9f));
+            buttonBgColor = ImGui.GetColorU32(new Vector4(colors.GridLine.X, colors.GridLine.Y, colors.GridLine.Z, 0.9f));
         }
         
         drawList.AddRectFilled(toggleButtonPos, 
@@ -263,9 +266,9 @@ public static class GraphControls
             buttonBorderColor, 3f);
         
         // Draw gear/settings icon
-        var iconColor = ImGui.GetColorU32(isOpen ? ChartColors.Neutral : ChartColors.TextPrimary);
+        var iconColor = ImGui.GetColorU32(isOpen ? colors.Neutral : colors.TextPrimary);
         var iconCenter = new Vector2(toggleButtonPos.X + toggleButtonWidth / 2, toggleButtonPos.Y + toggleButtonHeight / 2);
-        var iconRadius = 6f;
+        var iconRadius = style.DrawerIconRadius;
         
         drawList.AddCircle(iconCenter, iconRadius, iconColor, 8, 1.5f);
         drawList.AddCircleFilled(iconCenter, 2f, iconColor);
@@ -295,24 +298,26 @@ public static class GraphControls
         float drawerWidth,
         float drawerPadding,
         bool autoScrollEnabled,
-        Vector2 mousePos)
+        Vector2 mousePos,
+        GraphStyleConfig style)
     {
+        var colors = style.Colors;
         var checkboxPos = new Vector2(contentX, contentY + (rowHeight - checkboxSize) / 2);
         var checkboxRowEnd = new Vector2(contentX + drawerWidth - drawerPadding * 2, contentY + rowHeight);
         var checkboxRowHovered = mousePos.X >= contentX && mousePos.X <= checkboxRowEnd.X &&
                                 mousePos.Y >= contentY && mousePos.Y <= checkboxRowEnd.Y;
         
         var checkboxBorderColor = checkboxRowHovered 
-            ? ImGui.GetColorU32(ChartColors.TextPrimary) 
-            : ImGui.GetColorU32(ChartColors.TextSecondary);
+            ? ImGui.GetColorU32(colors.TextPrimary) 
+            : ImGui.GetColorU32(colors.TextSecondary);
         drawList.AddRect(checkboxPos, 
             new Vector2(checkboxPos.X + checkboxSize, checkboxPos.Y + checkboxSize), 
-            checkboxBorderColor, 2f);
+            checkboxBorderColor, style.DrawerRounding);
         
         if (autoScrollEnabled)
         {
-            var checkColor = ImGui.GetColorU32(ChartColors.Bullish);
-            var checkPadding = 3f;
+            var checkColor = ImGui.GetColorU32(colors.Bullish);
+            var checkPadding = style.DrawerCheckPadding;
             drawList.AddLine(
                 new Vector2(checkboxPos.X + checkPadding, checkboxPos.Y + checkboxSize / 2),
                 new Vector2(checkboxPos.X + checkboxSize / 2, checkboxPos.Y + checkboxSize - checkPadding),
@@ -324,7 +329,7 @@ public static class GraphControls
         }
         
         var labelPos = new Vector2(checkboxPos.X + checkboxSize + 6, contentY + (rowHeight - ImGui.GetTextLineHeight()) / 2);
-        var labelColor = ImGui.GetColorU32(autoScrollEnabled ? ChartColors.TextPrimary : ChartColors.TextSecondary);
+        var labelColor = ImGui.GetColorU32(autoScrollEnabled ? colors.TextPrimary : colors.TextSecondary);
         drawList.AddText(labelPos, labelColor, "Auto-scroll");
         
         return checkboxRowHovered && ImGui.IsMouseClicked(0);
@@ -342,11 +347,14 @@ public static class GraphControls
         float drawerPadding,
         int currentValue,
         Vector2 mousePos,
+        GraphStyleConfig style,
         out int newValue)
     {
-        const float valueBoxWidth = 50f;
-        const float smallButtonWidth = 22f;
-        const float spacing = 4f;
+        var colors = style.Colors;
+        var valueBoxWidth = style.DrawerValueBoxWidth;
+        var smallButtonWidth = style.DrawerSmallButtonWidth;
+        var spacing = style.DrawerElementSpacing;
+        var rounding = style.DrawerRounding;
         
         newValue = currentValue;
         var changed = false;
@@ -358,12 +366,12 @@ public static class GraphControls
         var minusBtnBg = minusBtnHovered 
             ? ImGui.GetColorU32(new Vector4(0.35f, 0.35f, 0.35f, 0.8f))
             : ImGui.GetColorU32(new Vector4(0.2f, 0.2f, 0.2f, 0.7f));
-        drawList.AddRectFilled(minusBtnPos, new Vector2(minusBtnPos.X + smallButtonWidth, minusBtnPos.Y + rowHeight - 4), minusBtnBg, 3f);
-        drawList.AddRect(minusBtnPos, new Vector2(minusBtnPos.X + smallButtonWidth, minusBtnPos.Y + rowHeight - 4), ImGui.GetColorU32(ChartColors.GridLine), 3f);
+        drawList.AddRectFilled(minusBtnPos, new Vector2(minusBtnPos.X + smallButtonWidth, minusBtnPos.Y + rowHeight - 4), minusBtnBg, rounding);
+        drawList.AddRect(minusBtnPos, new Vector2(minusBtnPos.X + smallButtonWidth, minusBtnPos.Y + rowHeight - 4), ImGui.GetColorU32(colors.GridLine), rounding);
         var minusText = "-";
         var minusTextSize = ImGui.CalcTextSize(minusText);
         drawList.AddText(new Vector2(minusBtnPos.X + (smallButtonWidth - minusTextSize.X) / 2, minusBtnPos.Y + (rowHeight - 4 - minusTextSize.Y) / 2), 
-            ImGui.GetColorU32(ChartColors.TextPrimary), minusText);
+            ImGui.GetColorU32(colors.TextPrimary), minusText);
         
         if (minusBtnHovered && ImGui.IsMouseClicked(0) && currentValue > 1)
         {
@@ -374,13 +382,13 @@ public static class GraphControls
         // Value box
         var valueBoxPos = new Vector2(minusBtnPos.X + smallButtonWidth + spacing, contentY + 2);
         drawList.AddRectFilled(valueBoxPos, new Vector2(valueBoxPos.X + valueBoxWidth, valueBoxPos.Y + rowHeight - 4), 
-            ImGui.GetColorU32(new Vector4(0.1f, 0.1f, 0.1f, 0.8f)), 3f);
+            ImGui.GetColorU32(new Vector4(0.1f, 0.1f, 0.1f, 0.8f)), rounding);
         drawList.AddRect(valueBoxPos, new Vector2(valueBoxPos.X + valueBoxWidth, valueBoxPos.Y + rowHeight - 4), 
-            ImGui.GetColorU32(ChartColors.GridLine), 3f);
+            ImGui.GetColorU32(colors.GridLine), rounding);
         var valueText = currentValue.ToString();
         var valueTextSize = ImGui.CalcTextSize(valueText);
         drawList.AddText(new Vector2(valueBoxPos.X + (valueBoxWidth - valueTextSize.X) / 2, valueBoxPos.Y + (rowHeight - 4 - valueTextSize.Y) / 2), 
-            ImGui.GetColorU32(ChartColors.Neutral), valueText);
+            ImGui.GetColorU32(colors.Neutral), valueText);
         
         // "+" button
         var plusBtnPos = new Vector2(valueBoxPos.X + valueBoxWidth + spacing, contentY + 2);
@@ -389,12 +397,12 @@ public static class GraphControls
         var plusBtnBg = plusBtnHovered 
             ? ImGui.GetColorU32(new Vector4(0.35f, 0.35f, 0.35f, 0.8f))
             : ImGui.GetColorU32(new Vector4(0.2f, 0.2f, 0.2f, 0.7f));
-        drawList.AddRectFilled(plusBtnPos, new Vector2(plusBtnPos.X + smallButtonWidth, plusBtnPos.Y + rowHeight - 4), plusBtnBg, 3f);
-        drawList.AddRect(plusBtnPos, new Vector2(plusBtnPos.X + smallButtonWidth, plusBtnPos.Y + rowHeight - 4), ImGui.GetColorU32(ChartColors.GridLine), 3f);
+        drawList.AddRectFilled(plusBtnPos, new Vector2(plusBtnPos.X + smallButtonWidth, plusBtnPos.Y + rowHeight - 4), plusBtnBg, rounding);
+        drawList.AddRect(plusBtnPos, new Vector2(plusBtnPos.X + smallButtonWidth, plusBtnPos.Y + rowHeight - 4), ImGui.GetColorU32(colors.GridLine), rounding);
         var plusText = "+";
         var plusTextSize = ImGui.CalcTextSize(plusText);
         drawList.AddText(new Vector2(plusBtnPos.X + (smallButtonWidth - plusTextSize.X) / 2, plusBtnPos.Y + (rowHeight - 4 - plusTextSize.Y) / 2), 
-            ImGui.GetColorU32(ChartColors.TextPrimary), plusText);
+            ImGui.GetColorU32(colors.TextPrimary), plusText);
         
         if (plusBtnHovered && ImGui.IsMouseClicked(0) && currentValue < 999)
         {
@@ -417,9 +425,12 @@ public static class GraphControls
         float drawerPadding,
         TimeUnit currentUnit,
         Vector2 mousePos,
+        GraphStyleConfig style,
         out TimeUnit newUnit)
     {
-        const float spacing = 4f;
+        var colors = style.Colors;
+        var spacing = style.DrawerElementSpacing;
+        var rounding = style.DrawerRounding;
         
         newUnit = currentUnit;
         var changed = false;
@@ -435,20 +446,20 @@ public static class GraphControls
                                 mousePos.Y >= unitBtnPos.Y && mousePos.Y <= unitBtnPos.Y + unitButtonHeight;
             
             var unitBtnBg = isSelected 
-                ? ImGui.GetColorU32(new Vector4(ChartColors.Neutral.X, ChartColors.Neutral.Y, ChartColors.Neutral.Z, 0.35f))
+                ? ImGui.GetColorU32(new Vector4(colors.Neutral.X, colors.Neutral.Y, colors.Neutral.Z, 0.35f))
                 : unitBtnHovered 
                     ? ImGui.GetColorU32(new Vector4(0.3f, 0.3f, 0.3f, 0.6f))
                     : ImGui.GetColorU32(new Vector4(0.15f, 0.15f, 0.15f, 0.5f));
             var unitBtnBorder = isSelected 
-                ? ImGui.GetColorU32(ChartColors.Neutral) 
-                : ImGui.GetColorU32(ChartColors.GridLine);
+                ? ImGui.GetColorU32(colors.Neutral) 
+                : ImGui.GetColorU32(colors.GridLine);
             
-            drawList.AddRectFilled(unitBtnPos, new Vector2(unitBtnPos.X + unitButtonWidth, unitBtnPos.Y + unitButtonHeight), unitBtnBg, 3f);
-            drawList.AddRect(unitBtnPos, new Vector2(unitBtnPos.X + unitButtonWidth, unitBtnPos.Y + unitButtonHeight), unitBtnBorder, 3f);
+            drawList.AddRectFilled(unitBtnPos, new Vector2(unitBtnPos.X + unitButtonWidth, unitBtnPos.Y + unitButtonHeight), unitBtnBg, rounding);
+            drawList.AddRect(unitBtnPos, new Vector2(unitBtnPos.X + unitButtonWidth, unitBtnPos.Y + unitButtonHeight), unitBtnBorder, rounding);
             
             var unitText = TimeUnitNames[i];
             var unitTextSize = ImGui.CalcTextSize(unitText);
-            var unitTextColor = isSelected ? ImGui.GetColorU32(ChartColors.Neutral) : ImGui.GetColorU32(ChartColors.TextPrimary);
+            var unitTextColor = isSelected ? ImGui.GetColorU32(colors.Neutral) : ImGui.GetColorU32(colors.TextPrimary);
             drawList.AddText(new Vector2(unitBtnPos.X + (unitButtonWidth - unitTextSize.X) / 2, unitBtnPos.Y + (unitButtonHeight - unitTextSize.Y) / 2), 
                 unitTextColor, unitText);
             
@@ -474,38 +485,43 @@ public static class GraphControls
         float drawerPadding,
         float currentPosition,
         Vector2 mousePos,
+        GraphStyleConfig style,
         out float newPosition)
     {
+        var colors = style.Colors;
+        var sliderHeight = style.DrawerSliderHeight;
+        var handleWidth = style.DrawerSliderHandleWidth;
+        var handleHeight = style.DrawerSliderHandleHeight;
+        var sliderRounding = style.DrawerSliderRounding;
+        var rounding = style.DrawerRounding;
+        
         newPosition = currentPosition;
         var changed = false;
         
         // Position label
         var sliderLabelPos = new Vector2(contentX, contentY + (rowHeight - ImGui.GetTextLineHeight()) / 2);
-        drawList.AddText(sliderLabelPos, ImGui.GetColorU32(ChartColors.TextSecondary), "Position:");
+        drawList.AddText(sliderLabelPos, ImGui.GetColorU32(colors.TextSecondary), "Position:");
         
         contentY += rowHeight;
         
         // Slider track
-        const float sliderHeight = 8f;
         var sliderTrackPos = new Vector2(contentX, contentY + (rowHeight - sliderHeight) / 2 - 4);
         var sliderTrackWidth = drawerWidth - drawerPadding * 2;
         
         drawList.AddRectFilled(sliderTrackPos, new Vector2(sliderTrackPos.X + sliderTrackWidth, sliderTrackPos.Y + sliderHeight), 
-            ImGui.GetColorU32(new Vector4(0.15f, 0.15f, 0.15f, 0.8f)), 4f);
+            ImGui.GetColorU32(new Vector4(0.15f, 0.15f, 0.15f, 0.8f)), sliderRounding);
         drawList.AddRect(sliderTrackPos, new Vector2(sliderTrackPos.X + sliderTrackWidth, sliderTrackPos.Y + sliderHeight), 
-            ImGui.GetColorU32(ChartColors.GridLine), 4f);
+            ImGui.GetColorU32(colors.GridLine), sliderRounding);
         
         // Fill
         var fillWidth = sliderTrackWidth * (currentPosition / 100f);
         if (fillWidth > 0)
         {
             drawList.AddRectFilled(sliderTrackPos, new Vector2(sliderTrackPos.X + fillWidth, sliderTrackPos.Y + sliderHeight), 
-                ImGui.GetColorU32(new Vector4(ChartColors.Neutral.X, ChartColors.Neutral.Y, ChartColors.Neutral.Z, 0.4f)), 4f);
+                ImGui.GetColorU32(new Vector4(colors.Neutral.X, colors.Neutral.Y, colors.Neutral.Z, 0.4f)), sliderRounding);
         }
         
         // Handle
-        const float handleWidth = 12f;
-        const float handleHeight = 16f;
         var handleX = sliderTrackPos.X + fillWidth - handleWidth / 2;
         handleX = Math.Clamp(handleX, sliderTrackPos.X, sliderTrackPos.X + sliderTrackWidth - handleWidth);
         var handleY = sliderTrackPos.Y + sliderHeight / 2 - handleHeight / 2;
@@ -514,11 +530,11 @@ public static class GraphControls
                            mousePos.Y >= handleY && mousePos.Y <= handleY + handleHeight;
         
         var handleColor = sliderHovered 
-            ? ImGui.GetColorU32(ChartColors.Neutral)
+            ? ImGui.GetColorU32(colors.Neutral)
             : ImGui.GetColorU32(new Vector4(0.6f, 0.6f, 0.6f, 1f));
-        drawList.AddRectFilled(new Vector2(handleX, handleY), new Vector2(handleX + handleWidth, handleY + handleHeight), handleColor, 3f);
+        drawList.AddRectFilled(new Vector2(handleX, handleY), new Vector2(handleX + handleWidth, handleY + handleHeight), handleColor, rounding);
         drawList.AddRect(new Vector2(handleX, handleY), new Vector2(handleX + handleWidth, handleY + handleHeight), 
-            ImGui.GetColorU32(ChartColors.AxisLine), 3f);
+            ImGui.GetColorU32(colors.AxisLine), rounding);
         
         // Handle drag
         if (sliderHovered && ImGui.IsMouseDown(0))
@@ -536,7 +552,7 @@ public static class GraphControls
         var percentText = $"{currentPosition:F0}%";
         var percentTextSize = ImGui.CalcTextSize(percentText);
         drawList.AddText(new Vector2(sliderTrackPos.X + sliderTrackWidth - percentTextSize.X, sliderTrackPos.Y + sliderHeight + 2), 
-            ImGui.GetColorU32(ChartColors.TextSecondary), percentText);
+            ImGui.GetColorU32(colors.TextSecondary), percentText);
         
         return changed;
     }

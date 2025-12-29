@@ -843,7 +843,7 @@ public class ImPlotGraph
     /// </summary>
     private void DrawNoDataMessage()
     {
-        ImGui.PushStyleColor(ImGuiCol.Text, ChartColors.TextSecondary);
+        ImGui.PushStyleColor(ImGuiCol.Text, _config.Style.Colors.TextSecondary);
         ImGui.TextUnformatted(_config.NoDataText);
         ImGui.PopStyleColor();
     }
@@ -866,9 +866,10 @@ public class ImPlotGraph
         }
         
         var isBullish = samples.Count < 2 || samples[^1] >= samples[0];
+        var colors = _config.Style.Colors;
         var color = isBullish 
-            ? new Vector3(ChartColors.Bullish.X, ChartColors.Bullish.Y, ChartColors.Bullish.Z)
-            : new Vector3(ChartColors.Bearish.X, ChartColors.Bearish.Y, ChartColors.Bearish.Z);
+            ? new Vector3(colors.Bullish.X, colors.Bullish.Y, colors.Bullish.Z)
+            : new Vector3(colors.Bearish.X, colors.Bearish.Y, colors.Bearish.Z);
         
         var series = new List<GraphSeriesData>
         {
@@ -908,7 +909,7 @@ public class ImPlotGraph
         IReadOnlyList<(string name, IReadOnlyList<(DateTime ts, float value)> samples)> seriesData)
     {
         var (globalMinTime, totalTimeSpan) = CalculateTimeRange(seriesData);
-        var colors = ChartColors.GetSeriesColors(seriesData.Count);
+        var colors = ChartColors.GetSeriesColors(seriesData.Count, _config.Style.Colors);
         
         var series = new List<GraphSeriesData>();
         for (var i = 0; i < seriesData.Count; i++)
@@ -977,7 +978,7 @@ public class ImPlotGraph
             globalMinTime = DateTime.UtcNow.AddHours(-1);
         
         var totalTimeSpan = Math.Max(1, (globalMaxTime - globalMinTime).TotalSeconds);
-        var defaultColors = ChartColors.GetSeriesColors(seriesData.Count);
+        var defaultColors = ChartColors.GetSeriesColors(seriesData.Count, _config.Style.Colors);
         
         var series = new List<GraphSeriesData>();
         var defaultColorIndex = 0;

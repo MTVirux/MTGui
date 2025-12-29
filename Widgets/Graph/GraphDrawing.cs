@@ -70,13 +70,14 @@ public static class GraphDrawing
     public static void DrawCrosshair(double mouseX, double mouseY, float valueAtMouse, GraphStyleConfig? style = null)
     {
         style ??= GraphStyleConfig.Default;
+        var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
         var plotLimits = ImPlot.GetPlotLimits();
         var plotPos = ImPlot.GetPlotPos();
         var plotSize = ImPlot.GetPlotSize();
         
-        var colorU32 = ImGui.GetColorU32(ChartColors.Crosshair);
+        var colorU32 = ImGui.GetColorU32(colors.Crosshair);
         
         // Vertical line
         var vTop = ImPlot.PlotToPixels(mouseX, plotLimits.Y.Max);
@@ -117,13 +118,13 @@ public static class GraphDrawing
         drawList.AddRectFilled(
             new Vector2(labelPos.X - bgPadding, labelPos.Y - bgPadding),
             new Vector2(labelPos.X + labelSize.X + bgPadding, labelPos.Y + labelSize.Y + bgPadding),
-            ImGui.GetColorU32(ChartColors.TooltipBackground), 2f);
+            ImGui.GetColorU32(colors.TooltipBackground), 2f);
         drawList.AddRect(
             new Vector2(labelPos.X - bgPadding, labelPos.Y - bgPadding),
             new Vector2(labelPos.X + labelSize.X + bgPadding, labelPos.Y + labelSize.Y + bgPadding),
-            ImGui.GetColorU32(ChartColors.TooltipBorder), 2f);
+            ImGui.GetColorU32(colors.TooltipBorder), 2f);
         
-        drawList.AddText(labelPos, ImGui.GetColorU32(ChartColors.TextPrimary), valueLabel);
+        drawList.AddText(labelPos, ImGui.GetColorU32(colors.TextPrimary), valueLabel);
         drawList.PopClipRect();
     }
     
@@ -199,8 +200,9 @@ public static class GraphDrawing
     public static void DrawCurrentPriceLine(double yValue, GraphStyleConfig? style = null)
     {
         style ??= GraphStyleConfig.Default;
+        var colors = style.Colors;
         var label = FormatUtils.FormatAbbreviated(yValue);
-        DrawPriceLine(yValue, label, ChartColors.CurrentPriceLine, style.PriceLineThickness, dashed: true, style);
+        DrawPriceLine(yValue, label, colors.CurrentPriceLine, style.PriceLineThickness, dashed: true, style);
     }
     
     #endregion

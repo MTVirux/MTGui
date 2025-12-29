@@ -61,12 +61,13 @@ public static class GraphLegend
     {
         style ??= GraphStyleConfig.Default;
         hiddenGroups ??= new HashSet<string>();
+        var colors = style.Colors;
         
         // Style the legend panel with trading platform colors
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, ChartColors.FrameBackground);
-        ImGui.PushStyleColor(ImGuiCol.Border, ChartColors.AxisLine);
-        ImGui.PushStyleColor(ImGuiCol.ScrollbarBg, ChartColors.PlotBackground);
-        ImGui.PushStyleColor(ImGuiCol.ScrollbarGrab, ChartColors.GridLine);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, colors.FrameBackground);
+        ImGui.PushStyleColor(ImGuiCol.Border, colors.AxisLine);
+        ImGui.PushStyleColor(ImGuiCol.ScrollbarBg, colors.PlotBackground);
+        ImGui.PushStyleColor(ImGuiCol.ScrollbarGrab, colors.GridLine);
         
         if (ImGui.BeginChild($"##{plotId}_legend", new Vector2(width, height), true))
         {
@@ -99,7 +100,7 @@ public static class GraphLegend
                     ImGui.Dummy(new Vector2(indicatorSize + 4f, indicatorSize));
                     ImGui.SameLine();
                     
-                    var textColor = isHidden ? ChartColors.TextSecondary : ChartColors.TextPrimary;
+                    var textColor = isHidden ? colors.TextSecondary : colors.TextPrimary;
                     ImGui.PushStyleColor(ImGuiCol.Text, textColor);
                     ImGui.TextUnformatted($"[{group.Name}]");
                     ImGui.PopStyleColor();
@@ -161,7 +162,7 @@ public static class GraphLegend
                 ImGui.SameLine();
                 
                 // Draw name with appropriate text color
-                var textColor = isHidden ? ChartColors.TextSecondary : ChartColors.TextPrimary;
+                var textColor = isHidden ? colors.TextSecondary : colors.TextPrimary;
                 ImGui.PushStyleColor(ImGuiCol.Text, textColor);
                 ImGui.TextUnformatted(seriesItem.Name);
                 ImGui.PopStyleColor();
@@ -287,6 +288,7 @@ public static class GraphLegend
     {
         style ??= GraphStyleConfig.Default;
         hiddenGroups ??= new HashSet<string>();
+        var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
         var plotPos = ImPlot.GetPlotPos();
@@ -297,8 +299,8 @@ public static class GraphLegend
         var indicatorSize = style.LegendIndicatorSize;
         var rowHeight = style.LegendRowHeight;
         var scrollbarWidth = style.LegendScrollbarWidth;
-        const float indicatorTextGap = 6f;
-        const float separatorHeight = 8f;
+        var indicatorTextGap = style.LegendIndicatorTextGap;
+        var separatorHeight = style.LegendSeparatorHeight;
         
         // Count groups and series for layout
         var groupCount = data.Groups?.Count ?? 0;
@@ -340,7 +342,7 @@ public static class GraphLegend
         var legendHeight = Math.Min(padding * 2 + contentHeight, maxLegendHeight);
         
         // Clamp legend dimensions to fit within plot area with margin
-        const float legendMargin = 10f;
+        var legendMargin = style.LegendMargin;
         var maxLegendWidth = plotSize.X - legendMargin * 2;
         legendWidth = Math.Min(legendWidth, Math.Max(50f, maxLegendWidth));
         
@@ -359,8 +361,8 @@ public static class GraphLegend
         drawList.PushClipRect(plotPos, new Vector2(plotPos.X + plotSize.X, plotPos.Y + plotSize.Y), true);
         
         // Draw legend background
-        var bgColor = ImGui.GetColorU32(new Vector4(ChartColors.FrameBackground.X, ChartColors.FrameBackground.Y, ChartColors.FrameBackground.Z, 0.85f));
-        var borderColor = ImGui.GetColorU32(ChartColors.AxisLine);
+        var bgColor = ImGui.GetColorU32(new Vector4(colors.FrameBackground.X, colors.FrameBackground.Y, colors.FrameBackground.Z, 0.85f));
+        var borderColor = ImGui.GetColorU32(colors.AxisLine);
         drawList.AddRectFilled(legendPos, new Vector2(legendPos.X + legendWidth, legendPos.Y + legendHeight), bgColor, style.LegendRounding);
         drawList.AddRect(legendPos, new Vector2(legendPos.X + legendWidth, legendPos.Y + legendHeight), borderColor, style.LegendRounding);
         
@@ -441,7 +443,7 @@ public static class GraphLegend
                         drawList.AddRectFilled(indicatorPos, new Vector2(indicatorPos.X + indicatorSize, indicatorPos.Y + indicatorSize), colorU32, 3f);
                     }
                     
-                    var textColor = isHidden ? ChartColors.TextSecondary : ChartColors.TextPrimary;
+                    var textColor = isHidden ? colors.TextSecondary : colors.TextPrimary;
                     var textY = yOffset + (rowHeight - ImGui.GetTextLineHeight()) / 2;
                     var textPos = new Vector2(indicatorPos.X + indicatorSize + indicatorTextGap, textY);
                     drawList.AddText(textPos, ImGui.GetColorU32(textColor), $"[{group.Name}]");
@@ -454,7 +456,7 @@ public static class GraphLegend
             var separatorY = yOffset + separatorHeight / 2;
             if (separatorY >= contentAreaTop && separatorY <= contentAreaBottom)
             {
-                var separatorColor = ImGui.GetColorU32(ChartColors.GridLine);
+                var separatorColor = ImGui.GetColorU32(colors.GridLine);
                 drawList.AddLine(
                     new Vector2(legendPos.X + padding, separatorY),
                     new Vector2(legendPos.X + legendWidth - padding - (needsScrolling ? scrollbarWidth + 4f : 0f), separatorY),
@@ -522,7 +524,7 @@ public static class GraphLegend
                         drawList.AddRectFilled(indicatorPos, new Vector2(indicatorPos.X + indicatorSize, indicatorPos.Y + indicatorSize), colorU32, 2f);
                     }
                     
-                    var textColor = isHidden ? ChartColors.TextSecondary : ChartColors.TextPrimary;
+                    var textColor = isHidden ? colors.TextSecondary : colors.TextPrimary;
                     var textY = yOffset + (rowHeight - ImGui.GetTextLineHeight()) / 2;
                     if (textY >= contentAreaTop - rowHeight && textY <= contentAreaBottom)
                     {
@@ -649,9 +651,10 @@ public static class GraphLegend
         }
         
         // Draw thumb with hover/active highlighting
+        var colors = style.Colors;
         var thumbColor = mouseOverThumb || (mouseOverTrack && ImGui.IsMouseDown(0))
-            ? ImGui.GetColorU32(ChartColors.TextSecondary)  // Brighter when hovered/active
-            : ImGui.GetColorU32(ChartColors.GridLine);
+            ? ImGui.GetColorU32(colors.TextSecondary)  // Brighter when hovered/active
+            : ImGui.GetColorU32(colors.GridLine);
         
         // Recalculate thumb position with potentially updated scroll offset
         scrollRatio = maxScrollOffset > 0 ? scrollOffset / maxScrollOffset : 0f;
