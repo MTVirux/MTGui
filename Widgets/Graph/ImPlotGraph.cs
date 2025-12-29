@@ -532,22 +532,25 @@ public class ImPlotGraph
     }
     
     /// <summary>
-    /// Draws value labels at the end of visible series.
+    /// Draws current value labels at the latest point of each visible series.
+    /// Labels are colored to match their series and auto-adjust to prevent overlap.
     /// </summary>
     private void DrawValueLabels(PreparedGraphData data)
     {
-        var labels = new List<(string Name, float Value, Vector3 Color)>();
+        var seriesData = new List<(string Name, double LastX, double LastY, Vector3 Color)>();
         
         foreach (var series in data.Series)
         {
             if (!series.Visible || series.PointCount == 0) continue;
-            var lastValue = (float)series.YValues[series.PointCount - 1];
-            labels.Add((series.Name, lastValue, series.Color));
+            
+            var lastX = series.XValues[series.PointCount - 1];
+            var lastY = series.YValues[series.PointCount - 1];
+            seriesData.Add((series.Name, lastX, lastY, series.Color));
         }
         
-        if (labels.Count > 0)
+        if (seriesData.Count > 0)
         {
-            GraphDrawing.DrawValueLabels(labels, data.XMax, _config.ValueLabelOffsetX + 8f, _config.Style);
+            GraphDrawing.DrawCurrentValueLabels(seriesData, _config.Style);
         }
     }
     

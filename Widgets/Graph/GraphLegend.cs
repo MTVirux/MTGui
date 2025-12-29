@@ -258,8 +258,9 @@ public static class GraphLegend
             var isHidden = hiddenSeries.Contains(series.Name);
             var displayAlpha = isHidden ? style.LegendHiddenAlpha : 1f;
             
-            // Check if mouse is over this row
+            // Check if mouse is over this row (excluding scrollbar area)
             var mouseInRow = mouseInLegend && 
+                            mousePos.X <= contentAreaRight &&
                             mousePos.Y >= Math.Max(rowTop, contentAreaTop) && 
                             mousePos.Y < Math.Min(rowBottom, contentAreaBottom) &&
                             rowTop >= contentAreaTop && rowBottom <= contentAreaBottom;
@@ -315,7 +316,7 @@ public static class GraphLegend
         // Draw scrollbar if needed
         if (needsScrolling)
         {
-            DrawScrollbar(
+            scrollOffset = DrawScrollbar(
                 drawList,
                 legendPos.X + legendWidth - padding - scrollbarWidth,
                 contentAreaTop,
@@ -328,8 +329,10 @@ public static class GraphLegend
                 style);
         }
         
-        // Show tooltip
-        if (mouseInLegend)
+        // Show tooltip (only when not over scrollbar)
+        var scrollbarX = legendPos.X + legendWidth - padding - scrollbarWidth;
+        var mouseOverScrollbar = needsScrolling && mousePos.X >= scrollbarX && mousePos.X <= legendPos.X + legendWidth;
+        if (mouseInLegend && !mouseOverScrollbar)
         {
             ShowLegendTooltip(sortedSeries, hiddenSeries, mousePos, contentAreaTop, scrollOffset, rowHeight, needsScrolling);
         }
@@ -345,9 +348,10 @@ public static class GraphLegend
     #region Helper Methods
     
     /// <summary>
-    /// Draws a scrollbar for the inside legend.
+    /// Draws a scrollbar for the inside legend and handles mouse interaction.
     /// </summary>
-    private static void DrawScrollbar(
+    /// <returns>The updated scroll offset if the user is interacting with the scrollbar.</returns>
+    private static float DrawScrollbar(
         ImDrawListPtr drawList,
         float x,
         float trackTop,
@@ -368,17 +372,50 @@ public static class GraphLegend
             new Vector2(x + width, trackBottom),
             trackColor, 3f);
         
-        // Thumb
+        // Thumb calculations
         var visibleRatio = visibleHeight / contentHeight;
         var thumbHeight = Math.Max(20f, trackHeight * visibleRatio);
         var scrollRatio = maxScrollOffset > 0 ? scrollOffset / maxScrollOffset : 0f;
         var thumbTop = trackTop + scrollRatio * (trackHeight - thumbHeight);
         
-        var thumbColor = ImGui.GetColorU32(ChartColors.GridLine);
+        // Check if mouse is over the scrollbar track
+        var mousePos = ImGui.GetMousePos();
+        var mouseOverTrack = mousePos.X >= x && mousePos.X <= x + width &&
+                            mousePos.Y >= trackTop && mousePos.Y <= trackBottom;
+        var mouseOverThumb = mousePos.X >= x && mousePos.X <= x + width &&
+                            mousePos.Y >= thumbTop && mousePos.Y <= thumbTop + thumbHeight;
+        
+        // Handle scrollbar click/drag
+        if (mouseOverTrack && ImGui.IsMouseDown(0))
+        {
+            // Calculate new scroll position based on mouse Y
+            // Map mouse Y to scroll offset (click on track jumps to that position)
+            var clickableTrackHeight = trackHeight - thumbHeight;
+            if (clickableTrackHeight > 0)
+            {
+                // Center the thumb on the mouse position
+                var targetThumbTop = mousePos.Y - thumbHeight / 2f;
+                targetThumbTop = Math.Clamp(targetThumbTop, trackTop, trackTop + clickableTrackHeight);
+                var newScrollRatio = (targetThumbTop - trackTop) / clickableTrackHeight;
+                scrollOffset = newScrollRatio * maxScrollOffset;
+            }
+        }
+        
+        // Draw thumb with hover/active highlighting
+        var thumbColor = mouseOverThumb || (mouseOverTrack && ImGui.IsMouseDown(0))
+            ? ImGui.GetColorU32(ChartColors.TextSecondary)  // Brighter when hovered/active
+            : ImGui.GetColorU32(ChartColors.GridLine);
+        
+        // Recalculate thumb position with potentially updated scroll offset
+        scrollRatio = maxScrollOffset > 0 ? scrollOffset / maxScrollOffset : 0f;
+        thumbTop = trackTop + scrollRatio * (trackHeight - thumbHeight);
+        
         drawList.AddRectFilled(
             new Vector2(x, thumbTop),
             new Vector2(x + width, thumbTop + thumbHeight),
             thumbColor, 3f);
+        
+        return scrollOffset;
     }
     
     /// <summary>

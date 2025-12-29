@@ -261,6 +261,18 @@ public class GraphStyleConfig
     /// <summary>Value label connecting line thickness. Default: 1.5</summary>
     public float ValueLabelLineThickness { get; set; } = 1.5f;
     
+    /// <summary>Minimum vertical spacing between labels to avoid overlap. Default: 2</summary>
+    public float ValueLabelMinSpacing { get; set; } = 2f;
+    
+    /// <summary>Horizontal offset from the data point for the label. Default: 6</summary>
+    public float ValueLabelHorizontalOffset { get; set; } = 6f;
+    
+    /// <summary>Maximum number of labels to show before hiding some. Default: 12</summary>
+    public int ValueLabelMaxVisible { get; set; } = 12;
+    
+    /// <summary>Alpha for label background. Default: 0.85</summary>
+    public float ValueLabelBackgroundAlpha { get; set; } = 0.85f;
+
     #endregion
     
     #region Controls Drawer Styles
@@ -270,7 +282,7 @@ public class GraphStyleConfig
     
     /// <summary>Toggle button height. Default: 20</summary>
     public float ToggleButtonHeight { get; set; } = 20f;
-    
+
     /// <summary>Controls drawer width. Default: 160</summary>
     public float DrawerWidth { get; set; } = 160f;
     
