@@ -12,14 +12,14 @@ namespace MTGui.Combo;
 /// - Optional hierarchical grouping
 /// - Search/filter functionality
 /// </summary>
-/// <typeparam name="TItem">The item type (must implement IComboItem).</typeparam>
+/// <typeparam name="TItem">The item type (must implement IMTComboItem).</typeparam>
 /// <typeparam name="TId">The item ID type.</typeparam>
-public class GenericComboWidget<TItem, TId> 
-    where TItem : IComboItem<TId>
+public class MTComboWidget<TItem, TId> 
+    where TItem : IMTComboItem<TId>
     where TId : notnull
 {
-    private readonly ComboConfig _config;
-    private readonly ComboState<TId> _state;
+    private readonly MTComboConfig _config;
+    private readonly MTComboState<TId> _state;
     
     // Cached items
     private IReadOnlyList<TItem>? _items;
@@ -27,10 +27,10 @@ public class GenericComboWidget<TItem, TId>
     private bool _needsSort = true;
     
     // Renderers and providers (set by consumer)
-    private IconRenderer<TItem>? _iconRenderer;
-    private SecondaryTextProvider<TItem>? _secondaryTextProvider;
-    private ItemFilter<TItem>? _customFilter;
-    private ItemComparer<TItem, TId>? _customComparer;
+    private MTIconRenderer<TItem>? _iconRenderer;
+    private MTSecondaryTextProvider<TItem>? _secondaryTextProvider;
+    private MTItemFilter<TItem>? _customFilter;
+    private MTItemComparer<TItem, TId>? _customComparer;
     private Func<TItem, string?>? _groupKeyProvider;
     private Func<TItem, string?>? _subGroupKeyProvider;
     private Func<TItem, string?>? _tertiaryGroupKeyProvider;
@@ -51,12 +51,12 @@ public class GenericComboWidget<TItem, TId>
     /// <summary>
     /// Gets the current configuration.
     /// </summary>
-    public ComboConfig Config => _config;
+    public MTComboConfig Config => _config;
     
     /// <summary>
     /// Gets the current state (for persistence).
     /// </summary>
-    public ComboState<TId> State => _state;
+    public MTComboState<TId> State => _state;
     
     /// <summary>
     /// Gets the currently selected item (single-select mode).
@@ -91,14 +91,14 @@ public class GenericComboWidget<TItem, TId>
     }
     
     /// <summary>
-    /// Creates a new GenericComboWidget.
+    /// Creates a new MTComboWidget.
     /// </summary>
     /// <param name="config">Widget configuration.</param>
     /// <param name="state">Optional external state for persistence. If null, creates internal state.</param>
-    public GenericComboWidget(ComboConfig config, ComboState<TId>? state = null)
+    public MTComboWidget(MTComboConfig config, MTComboState<TId>? state = null)
     {
         _config = config;
-        _state = state ?? new ComboState<TId>
+        _state = state ?? new MTComboState<TId>
         {
             SortOrder = config.DefaultSortOrder,
             GroupMode = config.DefaultGroupMode
@@ -110,7 +110,7 @@ public class GenericComboWidget<TItem, TId>
     /// <summary>
     /// Sets the icon renderer delegate.
     /// </summary>
-    public GenericComboWidget<TItem, TId> WithIconRenderer(IconRenderer<TItem> renderer)
+    public MTComboWidget<TItem, TId> WithIconRenderer(MTIconRenderer<TItem> renderer)
     {
         _iconRenderer = renderer;
         return this;
@@ -119,7 +119,7 @@ public class GenericComboWidget<TItem, TId>
     /// <summary>
     /// Sets the secondary text provider (e.g., for world names, categories).
     /// </summary>
-    public GenericComboWidget<TItem, TId> WithSecondaryText(SecondaryTextProvider<TItem> provider)
+    public MTComboWidget<TItem, TId> WithSecondaryText(MTSecondaryTextProvider<TItem> provider)
     {
         _secondaryTextProvider = provider;
         return this;
@@ -128,7 +128,7 @@ public class GenericComboWidget<TItem, TId>
     /// <summary>
     /// Sets a custom filter function.
     /// </summary>
-    public GenericComboWidget<TItem, TId> WithFilter(ItemFilter<TItem> filter)
+    public MTComboWidget<TItem, TId> WithFilter(MTItemFilter<TItem> filter)
     {
         _customFilter = filter;
         return this;
@@ -137,7 +137,7 @@ public class GenericComboWidget<TItem, TId>
     /// <summary>
     /// Sets a custom comparer for sorting.
     /// </summary>
-    public GenericComboWidget<TItem, TId> WithComparer(ItemComparer<TItem, TId> comparer)
+    public MTComboWidget<TItem, TId> WithComparer(MTItemComparer<TItem, TId> comparer)
     {
         _customComparer = comparer;
         return this;
@@ -146,7 +146,7 @@ public class GenericComboWidget<TItem, TId>
     /// <summary>
     /// Sets group key providers for hierarchical grouping.
     /// </summary>
-    public GenericComboWidget<TItem, TId> WithGrouping(
+    public MTComboWidget<TItem, TId> WithGrouping(
         Func<TItem, string?> groupKey,
         Func<TItem, string?>? subGroupKey = null,
         Func<TItem, string?>? tertiaryGroupKey = null)
@@ -314,18 +314,18 @@ public class GenericComboWidget<TItem, TId>
             if (_config.ShowSortToggle)
             {
                 ImGui.SameLine();
-                var sortLabel = _state.SortOrder == ComboSortOrder.Alphabetical ? "A-Z" : "ID";
+                var sortLabel = _state.SortOrder == MTComboSortOrder.Alphabetical ? "A-Z" : "ID";
                 if (ImGui.SmallButton(sortLabel))
                 {
-                    _state.SortOrder = _state.SortOrder == ComboSortOrder.Alphabetical 
-                        ? ComboSortOrder.ById 
-                        : ComboSortOrder.Alphabetical;
+                    _state.SortOrder = _state.SortOrder == MTComboSortOrder.Alphabetical 
+                        ? MTComboSortOrder.ById 
+                        : MTComboSortOrder.Alphabetical;
                     _needsSort = true;
                     StateChanged?.Invoke();
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip(_state.SortOrder == ComboSortOrder.Alphabetical 
+                    ImGui.SetTooltip(_state.SortOrder == MTComboSortOrder.Alphabetical 
                         ? "Sort alphabetically. Click to sort by ID." 
                         : "Sort by ID. Click to sort alphabetically.");
                 }
@@ -335,19 +335,19 @@ public class GenericComboWidget<TItem, TId>
             if (_config.ShowGroupingToggle && _groupKeyProvider != null)
             {
                 ImGui.SameLine();
-                var groupColor = _state.GroupMode == ComboGroupDisplayMode.Grouped ? 0xFF00FF00u : 0xFF888888u;
+                var groupColor = _state.GroupMode == MTComboGroupDisplayMode.Grouped ? 0xFF00FF00u : 0xFF888888u;
                 ImGui.PushStyleColor(ImGuiCol.Text, groupColor);
                 if (ImGui.SmallButton("G"))
                 {
-                    _state.GroupMode = _state.GroupMode == ComboGroupDisplayMode.Flat 
-                        ? ComboGroupDisplayMode.Grouped 
-                        : ComboGroupDisplayMode.Flat;
+                    _state.GroupMode = _state.GroupMode == MTComboGroupDisplayMode.Flat 
+                        ? MTComboGroupDisplayMode.Grouped 
+                        : MTComboGroupDisplayMode.Flat;
                     StateChanged?.Invoke();
                 }
                 ImGui.PopStyleColor();
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip(_state.GroupMode == ComboGroupDisplayMode.Grouped 
+                    ImGui.SetTooltip(_state.GroupMode == MTComboGroupDisplayMode.Grouped 
                         ? "Grouped view. Click for flat list." 
                         : "Flat list. Click to group.");
                 }
@@ -403,7 +403,7 @@ public class GenericComboWidget<TItem, TId>
         // Draw items
         var itemList = filteredItems.ToList();
         
-        if (_state.GroupMode == ComboGroupDisplayMode.Grouped && _groupKeyProvider != null)
+        if (_state.GroupMode == MTComboGroupDisplayMode.Grouped && _groupKeyProvider != null)
         {
             changed |= DrawGroupedItems(itemList);
         }
@@ -448,7 +448,7 @@ public class GenericComboWidget<TItem, TId>
             if (_config.MultiSelect)
             {
                 // Checkbox for group selection
-                ImGui.PushStyleColor(ImGuiCol.CheckMark, partialSelected ? ComboStyles.PartialCheckmark : ComboStyles.FullCheckmark);
+                ImGui.PushStyleColor(ImGuiCol.CheckMark, partialSelected ? MTComboStyles.PartialCheckmark : MTComboStyles.FullCheckmark);
                 var groupCheck = allSelected || partialSelected;
                 if (ImGui.Checkbox($"##grp", ref groupCheck))
                 {
@@ -519,7 +519,7 @@ public class GenericComboWidget<TItem, TId>
             
             if (_config.MultiSelect)
             {
-                ImGui.PushStyleColor(ImGuiCol.CheckMark, partialSelected ? ComboStyles.PartialCheckmark : ComboStyles.FullCheckmark);
+                ImGui.PushStyleColor(ImGuiCol.CheckMark, partialSelected ? MTComboStyles.PartialCheckmark : MTComboStyles.FullCheckmark);
                 var subCheck = allSelected || partialSelected;
                 if (ImGui.Checkbox($"##sub", ref subCheck))
                 {
@@ -587,7 +587,7 @@ public class GenericComboWidget<TItem, TId>
             
             if (_config.MultiSelect)
             {
-                ImGui.PushStyleColor(ImGuiCol.CheckMark, partialSelected ? ComboStyles.PartialCheckmark : ComboStyles.FullCheckmark);
+                ImGui.PushStyleColor(ImGuiCol.CheckMark, partialSelected ? MTComboStyles.PartialCheckmark : MTComboStyles.FullCheckmark);
                 var tertCheck = allSelected || partialSelected;
                 if (ImGui.Checkbox($"##tert", ref tertCheck))
                 {
@@ -645,7 +645,7 @@ public class GenericComboWidget<TItem, TId>
             ImGui.GetWindowDrawList().AddRectFilled(
                 cursorPos,
                 cursorPos + new Vector2(rowWidth, rowHeight),
-                ComboStyles.SelectedBackground);
+                MTComboStyles.SelectedBackground);
         }
         
         // Favorite star
@@ -726,7 +726,7 @@ public class GenericComboWidget<TItem, TId>
             if (!string.IsNullOrEmpty(secondary))
             {
                 ImGui.SameLine();
-                ImGui.PushStyleColor(ImGuiCol.Text, ComboStyles.SecondaryText);
+                ImGui.PushStyleColor(ImGuiCol.Text, MTComboStyles.SecondaryText);
                 ImGui.TextUnformatted(secondary);
                 ImGui.PopStyleColor();
             }
@@ -743,7 +743,7 @@ public class GenericComboWidget<TItem, TId>
         var cursorPos = ImGui.GetCursorScreenPos();
         var hovering = ImGui.IsMouseHoveringRect(cursorPos, cursorPos + _config.StarSize);
         
-        var color = ComboStyles.GetFavoriteStarColor(isFavorite, hovering);
+        var color = MTComboStyles.GetFavoriteStarColor(isFavorite, hovering);
         
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.TextUnformatted("\u2605"); // Unicode star character
@@ -802,7 +802,7 @@ public class GenericComboWidget<TItem, TId>
         
         var sorted = _items.ToList();
         
-        if (_customComparer != null && _state.SortOrder == ComboSortOrder.Custom)
+        if (_customComparer != null && _state.SortOrder == MTComboSortOrder.Custom)
         {
             sorted.Sort((a, b) => _customComparer(a, b, _state.Favorites));
         }
@@ -819,7 +819,7 @@ public class GenericComboWidget<TItem, TId>
                 // Then by sort order
                 return _state.SortOrder switch
                 {
-                    ComboSortOrder.ById => Comparer<TId>.Default.Compare(a.Id, b.Id),
+                    MTComboSortOrder.ById => Comparer<TId>.Default.Compare(a.Id, b.Id),
                     _ => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase)
                 };
             });

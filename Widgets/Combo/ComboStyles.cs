@@ -8,7 +8,7 @@ namespace MTGui.Combo;
 /// ABGR format: 0xAABBGGRR where AA=Alpha, BB=Blue, GG=Green, RR=Red.
 /// This is the native format used by ImGui's uint color parameters.
 /// </remarks>
-public static class ComboStyles
+public static class MTComboStyles
 {
     // === Favorite Star Colors (uint ABGR format for ImGui native) ===
     

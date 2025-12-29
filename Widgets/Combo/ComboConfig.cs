@@ -1,11 +1,11 @@
 namespace MTGui.Combo;
 
 /// <summary>
-/// Interface for items that can be displayed in a GenericComboWidget.
+/// Interface for items that can be displayed in a MTComboWidget.
 /// Implement this interface to define your item's identity and display properties.
 /// </summary>
 /// <typeparam name="TId">The type of the item's unique identifier (e.g., uint, ulong, enum).</typeparam>
-public interface IComboItem<TId> where TId : notnull
+public interface IMTComboItem<TId> where TId : notnull
 {
     /// <summary>
     /// Gets the unique identifier for this item.
@@ -22,7 +22,7 @@ public interface IComboItem<TId> where TId : notnull
 /// Extended interface for items that support grouping.
 /// </summary>
 /// <typeparam name="TId">The type of the item's unique identifier.</typeparam>
-public interface IGroupableComboItem<TId> : IComboItem<TId> where TId : notnull
+public interface IMTGroupableComboItem<TId> : IMTComboItem<TId> where TId : notnull
 {
     /// <summary>
     /// Gets the primary group key (e.g., Region, Category).
@@ -44,9 +44,9 @@ public interface IGroupableComboItem<TId> : IComboItem<TId> where TId : notnull
 }
 
 /// <summary>
-/// Configuration for GenericComboWidget behavior and appearance.
+/// Configuration for MTComboWidget behavior and appearance.
 /// </summary>
-public class ComboConfig
+public class MTComboConfig
 {
     /// <summary>
     /// Unique ID for ImGui identification.
@@ -121,12 +121,12 @@ public class ComboConfig
     /// <summary>
     /// Default sort order.
     /// </summary>
-    public ComboSortOrder DefaultSortOrder { get; init; } = ComboSortOrder.Alphabetical;
+    public MTComboSortOrder DefaultSortOrder { get; init; } = MTComboSortOrder.Alphabetical;
     
     /// <summary>
     /// Default group display mode.
     /// </summary>
-    public ComboGroupDisplayMode DefaultGroupMode { get; init; } = ComboGroupDisplayMode.Flat;
+    public MTComboGroupDisplayMode DefaultGroupMode { get; init; } = MTComboGroupDisplayMode.Flat;
     
     /// <summary>
     /// Whether to include an "All" option at the top (for multi-select).
@@ -154,17 +154,17 @@ public class ComboConfig
 /// State holder for combo widget to enable external persistence.
 /// </summary>
 /// <typeparam name="TId">The type of item identifiers.</typeparam>
-public class ComboState<TId> where TId : notnull
+public class MTComboState<TId> where TId : notnull
 {
     /// <summary>
     /// Current sort order.
     /// </summary>
-    public ComboSortOrder SortOrder { get; set; } = ComboSortOrder.Alphabetical;
+    public MTComboSortOrder SortOrder { get; set; } = MTComboSortOrder.Alphabetical;
     
     /// <summary>
     /// Current group display mode.
     /// </summary>
-    public ComboGroupDisplayMode GroupMode { get; set; } = ComboGroupDisplayMode.Flat;
+    public MTComboGroupDisplayMode GroupMode { get; set; } = MTComboGroupDisplayMode.Flat;
     
     /// <summary>
     /// Set of favorite item IDs.
@@ -198,7 +198,7 @@ public class ComboState<TId> where TId : notnull
 /// <typeparam name="TItem">The item type.</typeparam>
 /// <param name="item">The item to render an icon for.</param>
 /// <param name="size">The icon size.</param>
-public delegate void IconRenderer<in TItem>(TItem item, Vector2 size);
+public delegate void MTIconRenderer<in TItem>(TItem item, Vector2 size);
 
 /// <summary>
 /// Delegate for getting additional display text (e.g., world name, category).
@@ -206,7 +206,7 @@ public delegate void IconRenderer<in TItem>(TItem item, Vector2 size);
 /// <typeparam name="TItem">The item type.</typeparam>
 /// <param name="item">The item.</param>
 /// <returns>Additional text to display, or null.</returns>
-public delegate string? SecondaryTextProvider<in TItem>(TItem item);
+public delegate string? MTSecondaryTextProvider<in TItem>(TItem item);
 
 /// <summary>
 /// Delegate for custom item filtering.
@@ -215,7 +215,7 @@ public delegate string? SecondaryTextProvider<in TItem>(TItem item);
 /// <param name="item">The item to check.</param>
 /// <param name="filterText">The current filter text (lowercase).</param>
 /// <returns>True if the item matches the filter.</returns>
-public delegate bool ItemFilter<in TItem>(TItem item, string filterText);
+public delegate bool MTItemFilter<in TItem>(TItem item, string filterText);
 
 /// <summary>
 /// Delegate for custom item sorting.
@@ -226,4 +226,4 @@ public delegate bool ItemFilter<in TItem>(TItem item, string filterText);
 /// <param name="b">Second item.</param>
 /// <param name="favorites">Set of favorite IDs.</param>
 /// <returns>Comparison result.</returns>
-public delegate int ItemComparer<in TItem, TId>(TItem a, TItem b, IReadOnlySet<TId> favorites) where TId : notnull;
+public delegate int MTItemComparer<in TItem, TId>(TItem a, TItem b, IReadOnlySet<TId> favorites) where TId : notnull;

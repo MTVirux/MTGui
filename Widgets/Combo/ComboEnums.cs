@@ -3,7 +3,7 @@ namespace MTGui.Combo;
 /// <summary>
 /// Sort order options for combo items.
 /// </summary>
-public enum ComboSortOrder
+public enum MTComboSortOrder
 {
     /// <summary>Sort alphabetically by name.</summary>
     Alphabetical,
@@ -16,7 +16,7 @@ public enum ComboSortOrder
 /// <summary>
 /// Display mode for combo groups.
 /// </summary>
-public enum ComboGroupDisplayMode
+public enum MTComboGroupDisplayMode
 {
     /// <summary>Show as flat list without grouping.</summary>
     Flat,
