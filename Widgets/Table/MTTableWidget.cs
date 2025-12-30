@@ -277,18 +277,18 @@ public class MTTableWidget<TRow>
         Vector4? color)
     {
         var textSize = ImGui.CalcTextSize(label);
-        var cellSize = ImGui.GetContentRegionAvail();
         var style = ImGui.GetStyle();
         
-        // Reserve space for sort arrow if sortable
-        const float sortArrowWidth = 20f;
-        var effectiveCellWidth = sortable ? cellSize.X - sortArrowWidth : cellSize.X;
+        // Get available width before any rendering - this is the content area width
+        var cellWidth = ImGui.GetContentRegionAvail().X;
         
-        // Calculate horizontal offset
+        // Calculate horizontal offset from cursor start position
+        // Note: We don't subtract sort arrow width because the header rendering handles that,
+        // and GetContentRegionAvail gives us the actual usable space
         float offsetX = hAlign switch
         {
-            MTTableHorizontalAlignment.Center => (effectiveCellWidth - textSize.X) * 0.5f,
-            MTTableHorizontalAlignment.Right => effectiveCellWidth - textSize.X,
+            MTTableHorizontalAlignment.Center => (cellWidth - textSize.X) * 0.5f,
+            MTTableHorizontalAlignment.Right => cellWidth - textSize.X,
             _ => 0f
         };
         
@@ -300,23 +300,32 @@ public class MTTableWidget<TRow>
             _ => 0f
         };
         
-        if (offsetX > 0f || offsetY != 0f)
-        {
-            var cursorPos = ImGui.GetCursorPos();
-            ImGui.SetCursorPos(new Vector2(cursorPos.X + Math.Max(0f, offsetX), cursorPos.Y + offsetY));
-        }
+        // Store original cursor position for text rendering
+        var startCursorPos = ImGui.GetCursorPos();
+        
+        // Render empty TableHeader to get sort arrow and click handling
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        ImGui.TableHeader(string.Empty);
+        ImGui.PopStyleVar();
+        
+        // Go back and render aligned text at the calculated position
+        ImGui.SameLine();
+        var afterHeaderCursor = ImGui.GetCursorPos();
+        ImGui.SetCursorPos(new Vector2(
+            startCursorPos.X + Math.Max(0f, offsetX),
+            startCursorPos.Y + offsetY));
         
         if (color.HasValue)
         {
-            ImGui.PushStyleColor(ImGuiCol.Text, color.Value);
+            ImGui.TextColored(color.Value, label);
         }
-        
-        ImGui.TableHeader(label);
-        
-        if (color.HasValue)
+        else
         {
-            ImGui.PopStyleColor();
+            ImGui.TextUnformatted(label);
         }
+        
+        // Restore cursor to after header for proper layout
+        ImGui.SetCursorPos(afterHeaderCursor);
     }
     
     #region Settings UI

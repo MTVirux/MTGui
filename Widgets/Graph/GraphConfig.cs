@@ -66,6 +66,11 @@ public class MTGraphConfig
     public float LegendHeightPercent { get; set; } = 25f;
     
     /// <summary>
+    /// Whether the legend is collapsed (showing only a toggle button).
+    /// </summary>
+    public bool LegendCollapsed { get; set; } = false;
+    
+    /// <summary>
     /// The type of graph to render (Area, Line, Stairs, Bars).
     /// </summary>
     public MTGraphType GraphType { get; set; } = MTGraphType.Area;
@@ -146,6 +151,7 @@ public interface IMTGraphSettings
     float LegendWidth { get; set; }
     float LegendHeightPercent { get; set; }
     bool ShowLegend { get; set; }
+    bool LegendCollapsed { get; set; }
     MTLegendPosition LegendPosition { get; set; }
     
     // Graph type
@@ -182,7 +188,8 @@ public class MTGraphSettings : IMTGraphSettings
     public float LegendWidth { get; set; } = 140f;
     public float LegendHeightPercent { get; set; } = 25f;
     public bool ShowLegend { get; set; } = true;
-    public MTLegendPosition LegendPosition { get; set; } = MTLegendPosition.Outside;
+    public bool LegendCollapsed { get; set; } = false;
+    public MTLegendPosition LegendPosition { get; set; } = MTLegendPosition.InsideTopLeft;
     
     // Graph type
     public MTGraphType GraphType { get; set; } = MTGraphType.Area;
@@ -233,6 +240,7 @@ public class MTGraphSettings : IMTGraphSettings
         LegendWidth = other.LegendWidth;
         LegendHeightPercent = other.LegendHeightPercent;
         ShowLegend = other.ShowLegend;
+        LegendCollapsed = other.LegendCollapsed;
         LegendPosition = other.LegendPosition;
         GraphType = other.GraphType;
         ShowXAxisTimestamps = other.ShowXAxisTimestamps;

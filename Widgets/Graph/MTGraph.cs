@@ -304,6 +304,14 @@ public class MTGraph
     public bool IsGroupHidden(string groupName) => _hiddenGroups.Contains(groupName);
     
     /// <summary>
+    /// Toggles the collapsed state of the legend.
+    /// </summary>
+    public void ToggleLegendCollapse()
+    {
+        _config.LegendCollapsed = !_config.LegendCollapsed;
+    }
+    
+    /// <summary>
     /// Checks if a series should be visible based on both direct visibility and group visibility.
     /// A series is hidden if it's directly hidden OR if any of its groups are hidden.
     /// </summary>
@@ -346,15 +354,7 @@ public class MTGraph
         try
         {
             var avail = ImGui.GetContentRegionAvail();
-            
-            // Reserve space for outside legend if needed
-            var useOutsideLegend = _config.ShowLegend && 
-                                   _config.LegendPosition == MTLegendPosition.Outside && 
-                                   data.HasMultipleSeriesTotal;
-            var legendWidth = useOutsideLegend ? _config.LegendWidth : 0f;
-            var legendPadding = useOutsideLegend ? 5f : 0f;
-            var plotWidth = Math.Max(1f, avail.X - legendWidth - legendPadding);
-            var plotSize = new Vector2(plotWidth, Math.Max(1f, avail.Y));
+            var plotSize = new Vector2(Math.Max(1f, avail.X), Math.Max(1f, avail.Y));
 
             // Configure plot flags
             var plotFlags = ImPlotFlags.NoTitle | ImPlotFlags.NoLegend | ImPlotFlags.NoMenus | 
@@ -484,10 +484,13 @@ public class MTGraph
                         _config.LegendPosition,
                         _config.LegendHeightPercent,
                         _insideLegendScrollOffset,
+                        _config.LegendCollapsed,
                         ToggleSeriesVisibility,
                         ToggleGroupVisibility,
+                        ToggleLegendCollapse,
                         _config.Style);
                     _insideLegendScrollOffset = _cachedLegendResult.ScrollOffset;
+                    // Note: CollapseToggled is handled via the ToggleLegendCollapse callback
                 }
                 else
                 {
@@ -530,23 +533,6 @@ public class MTGraph
             }
             
             MTChartColors.PopChartStyle();
-            
-            // Draw outside legend
-            if (useOutsideLegend)
-            {
-                ImGui.SameLine();
-                MTGraphLegend.DrawScrollableLegend(
-                    _config.PlotId,
-                    data.Series,
-                    data.Groups,
-                    _hiddenSeries,
-                    _hiddenGroups,
-                    _config.LegendWidth,
-                    avail.Y,
-                    ToggleSeriesVisibility,
-                    ToggleGroupVisibility,
-                    _config.Style);
-            }
         }
         catch (Exception ex)
         {

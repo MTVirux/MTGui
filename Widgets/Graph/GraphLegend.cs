@@ -30,7 +30,7 @@ public static class MTGraphLegend
         Action<string>? onToggleSeries = null,
         MTGraphStyleConfig? style = null)
     {
-        DrawScrollableLegend(plotId, series, null, hiddenSeries, null, width, height, onToggleSeries, null, style);
+        DrawScrollableLegend(plotId, series, null, hiddenSeries, null, width, height, false, onToggleSeries, null, null, style);
     }
     
     /// <summary>
@@ -59,6 +59,39 @@ public static class MTGraphLegend
         Action<string>? onToggleGroup = null,
         MTGraphStyleConfig? style = null)
     {
+        DrawScrollableLegend(plotId, series, groups, hiddenSeries, hiddenGroups, width, height, false, onToggleSeries, onToggleGroup, null, style);
+    }
+    
+    /// <summary>
+    /// Draws a scrollable legend panel outside the plot area using ImGui child window.
+    /// Supports both series and group toggling and collapsible mode.
+    /// </summary>
+    /// <param name="plotId">Unique identifier for the plot (used for child window ID).</param>
+    /// <param name="series">The series data to display in the legend.</param>
+    /// <param name="groups">Optional groups to display in the legend (shown before series).</param>
+    /// <param name="hiddenSeries">Set of hidden series names.</param>
+    /// <param name="hiddenGroups">Set of hidden group names.</param>
+    /// <param name="width">Width of the legend panel.</param>
+    /// <param name="height">Height of the legend panel.</param>
+    /// <param name="isCollapsed">Whether the legend is collapsed.</param>
+    /// <param name="onToggleSeries">Callback when a series visibility is toggled.</param>
+    /// <param name="onToggleGroup">Callback when a group visibility is toggled.</param>
+    /// <param name="onToggleCollapse">Callback when the collapse state is toggled.</param>
+    /// <param name="style">Optional style configuration.</param>
+    public static void DrawScrollableLegend(
+        string plotId,
+        IReadOnlyList<MTGraphSeriesData> series,
+        IReadOnlyList<MTGraphSeriesGroup>? groups,
+        HashSet<string> hiddenSeries,
+        HashSet<string>? hiddenGroups,
+        float width,
+        float height,
+        bool isCollapsed,
+        Action<string>? onToggleSeries = null,
+        Action<string>? onToggleGroup = null,
+        Action? onToggleCollapse = null,
+        MTGraphStyleConfig? style = null)
+    {
         style ??= MTGraphStyleConfig.Default;
         hiddenGroups ??= new HashSet<string>();
         var colors = style.Colors;
@@ -69,10 +102,45 @@ public static class MTGraphLegend
         ImGui.PushStyleColor(ImGuiCol.ScrollbarBg, colors.PlotBackground);
         ImGui.PushStyleColor(ImGuiCol.ScrollbarGrab, colors.GridLine);
         
-        if (ImGui.BeginChild($"##{plotId}_legend", new Vector2(width, height), true))
+        // Calculate collapsed panel dimensions - small button when collapsed
+        var collapsedSize = 24f;
+        var actualHeight = isCollapsed ? collapsedSize : height;
+        var actualWidth = isCollapsed ? collapsedSize : width;
+        
+        if (ImGui.BeginChild($"##{plotId}_legend", new Vector2(actualWidth, actualHeight), true))
         {
             var drawList = ImGui.GetWindowDrawList();
             var indicatorSize = style.LegendIndicatorSize;
+            
+            // Draw collapse/expand toggle header
+            if (onToggleCollapse != null)
+            {
+                var togglePos = ImGui.GetCursorScreenPos();
+                var toggleSize = isCollapsed ? 12f : 14f;
+                var toggleIcon = isCollapsed ? "▼" : "▲";  // ▼ collapsed, ▲ expanded
+                
+                ImGui.PushStyleColor(ImGuiCol.Text, colors.TextSecondary);
+                if (ImGui.Selectable($"{toggleIcon}##{plotId}_collapse_toggle", false, ImGuiSelectableFlags.None, new Vector2(isCollapsed ? toggleSize : actualWidth - 16f, toggleSize)))
+                {
+                    onToggleCollapse.Invoke();
+                }
+                ImGui.PopStyleColor();
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip(isCollapsed ? "Expand legend" : "Collapse legend");
+                }
+                
+                // If collapsed, end here
+                if (isCollapsed)
+                {
+                    ImGui.EndChild();
+                    ImGui.PopStyleColor(4);
+                    return;
+                }
+                
+                ImGui.Separator();
+            }
             
             // Draw groups first (if any)
             if (groups is { Count: > 0 })
@@ -227,15 +295,19 @@ public static class MTGraphLegend
         /// <summary>Updated scroll offset for the legend.</summary>
         public readonly float ScrollOffset;
         
-        public InsideLegendResult(Vector2 boundsMin, Vector2 boundsMax, float scrollOffset)
+        /// <summary>Whether the collapse toggle was clicked.</summary>
+        public readonly bool CollapseToggled;
+        
+        public InsideLegendResult(Vector2 boundsMin, Vector2 boundsMax, float scrollOffset, bool collapseToggled = false)
         {
             BoundsMin = boundsMin;
             BoundsMax = boundsMax;
             IsValid = true;
             ScrollOffset = scrollOffset;
+            CollapseToggled = collapseToggled;
         }
         
-        public static InsideLegendResult Invalid => new(Vector2.Zero, Vector2.Zero, 0f);
+        public static InsideLegendResult Invalid => new(Vector2.Zero, Vector2.Zero, 0f, false);
     }
     
     /// <summary>
@@ -258,7 +330,7 @@ public static class MTGraphLegend
         Action<string>? onToggleSeries = null,
         MTGraphStyleConfig? style = null)
     {
-        return DrawInsideLegend(data, hiddenSeries, null, position, legendHeightPercent, scrollOffset, onToggleSeries, null, style);
+        return DrawInsideLegend(data, hiddenSeries, null, position, legendHeightPercent, scrollOffset, false, onToggleSeries, null, null, style);
     }
     
     /// <summary>
@@ -284,6 +356,38 @@ public static class MTGraphLegend
         float scrollOffset,
         Action<string>? onToggleSeries = null,
         Action<string>? onToggleGroup = null,
+        MTGraphStyleConfig? style = null)
+    {
+        return DrawInsideLegend(data, hiddenSeries, hiddenGroups, position, legendHeightPercent, scrollOffset, false, onToggleSeries, onToggleGroup, null, style);
+    }
+    
+    /// <summary>
+    /// Draws an interactive legend inside the plot area using ImPlot's draw list.
+    /// Supports both series and group toggling, and collapsible mode.
+    /// </summary>
+    /// <param name="data">Prepared graph data containing series and groups.</param>
+    /// <param name="hiddenSeries">Set of hidden series names.</param>
+    /// <param name="hiddenGroups">Set of hidden group names.</param>
+    /// <param name="position">Legend position within the plot.</param>
+    /// <param name="legendHeightPercent">Maximum legend height as percentage of plot height (10-80).</param>
+    /// <param name="scrollOffset">Current scroll offset (pass result back on next frame).</param>
+    /// <param name="isCollapsed">Whether the legend is collapsed.</param>
+    /// <param name="onToggleSeries">Callback when a series visibility is toggled.</param>
+    /// <param name="onToggleGroup">Callback when a group visibility is toggled.</param>
+    /// <param name="onToggleCollapse">Callback when the collapse state is toggled.</param>
+    /// <param name="style">Optional style configuration.</param>
+    /// <returns>Result containing legend bounds and updated scroll offset.</returns>
+    public static InsideLegendResult DrawInsideLegend(
+        MTPreparedGraphData data,
+        HashSet<string> hiddenSeries,
+        HashSet<string>? hiddenGroups,
+        MTLegendPosition position,
+        float legendHeightPercent,
+        float scrollOffset,
+        bool isCollapsed,
+        Action<string>? onToggleSeries = null,
+        Action<string>? onToggleGroup = null,
+        Action? onToggleCollapse = null,
         MTGraphStyleConfig? style = null)
     {
         style ??= MTGraphStyleConfig.Default;
@@ -329,8 +433,68 @@ public static class MTGraphLegend
         if (validSeriesCount == 0 && groupCount == 0) 
             return InsideLegendResult.Invalid;
         
-        // Calculate content height (groups + separator + series)
-        var contentHeight = (groupCount + validSeriesCount) * rowHeight;
+        // Track if collapse was toggled
+        var collapseToggled = false;
+        
+        // Handle collapsed state - show small toggle button
+        if (isCollapsed)
+        {
+            var collapsedSize = 24f;
+            var collapsedMargin = style.LegendMargin;
+            
+            // Position the collapsed button based on legend position preference
+            Vector2 collapsedPos = position switch
+            {
+                MTLegendPosition.InsideTopRight => new Vector2(plotPos.X + plotSize.X - collapsedSize - collapsedMargin, plotPos.Y + collapsedMargin),
+                MTLegendPosition.InsideBottomLeft => new Vector2(plotPos.X + collapsedMargin, plotPos.Y + plotSize.Y - collapsedSize - collapsedMargin),
+                MTLegendPosition.InsideBottomRight => new Vector2(plotPos.X + plotSize.X - collapsedSize - collapsedMargin, plotPos.Y + plotSize.Y - collapsedSize - collapsedMargin),
+                _ => new Vector2(plotPos.X + collapsedMargin, plotPos.Y + collapsedMargin)
+            };
+            
+            var collapsedBgColor = ImGui.GetColorU32(new Vector4(colors.FrameBackground.X, colors.FrameBackground.Y, colors.FrameBackground.Z, 0.85f));
+            var collapsedBorderColor = ImGui.GetColorU32(colors.AxisLine);
+            
+            drawList.PushClipRect(plotPos, new Vector2(plotPos.X + plotSize.X, plotPos.Y + plotSize.Y), true);
+            drawList.AddRectFilled(collapsedPos, new Vector2(collapsedPos.X + collapsedSize, collapsedPos.Y + collapsedSize), collapsedBgColor, style.LegendRounding);
+            drawList.AddRect(collapsedPos, new Vector2(collapsedPos.X + collapsedSize, collapsedPos.Y + collapsedSize), collapsedBorderColor, style.LegendRounding);
+            
+            // Draw expand icon (▼) - down arrow when collapsed, centered with reduced font
+            var iconText = "▼";
+            ImGui.SetWindowFontScale(0.75f);
+            var iconTextSize = ImGui.CalcTextSize(iconText);
+            var iconPos = new Vector2(
+                collapsedPos.X + (collapsedSize - iconTextSize.X) / 2f,
+                collapsedPos.Y + (collapsedSize - iconTextSize.Y) / 2f);
+            drawList.AddText(iconPos, ImGui.GetColorU32(colors.TextSecondary), iconText);
+            ImGui.SetWindowFontScale(1.0f);
+            
+            // Handle click to expand
+            var collapsedMousePos = ImGui.GetMousePos();
+            var mouseInButton = collapsedMousePos.X >= collapsedPos.X && collapsedMousePos.X <= collapsedPos.X + collapsedSize &&
+                               collapsedMousePos.Y >= collapsedPos.Y && collapsedMousePos.Y <= collapsedPos.Y + collapsedSize;
+            
+            if (mouseInButton)
+            {
+                // Show tooltip
+                ImGui.SetTooltip("Expand legend");
+                
+                if (ImGui.IsMouseClicked(0))
+                {
+                    onToggleCollapse?.Invoke();
+                    collapseToggled = true;
+                }
+            }
+            
+            drawList.PopClipRect();
+            
+            return new InsideLegendResult(collapsedPos, new Vector2(collapsedPos.X + collapsedSize, collapsedPos.Y + collapsedSize), scrollOffset, collapseToggled);
+        }
+        
+        // Calculate content height (groups + separator + series + header for collapse toggle)
+        // Header row uses a smaller height for the collapse toggle
+        var headerRowHeight = 18f;
+        var headerHeight = onToggleCollapse != null ? headerRowHeight : 0f;
+        var contentHeight = (groupCount + validSeriesCount) * rowHeight + headerHeight;
         if (hasGroups)
             contentHeight += separatorHeight;
             
@@ -394,6 +558,64 @@ public static class MTGraphLegend
         // Track which item is being hovered for tooltip
         string? hoveredItemName = null;
         bool hoveredIsGroup = false;
+        
+        // Draw collapse toggle header if callback is provided
+        if (onToggleCollapse != null)
+        {
+            var headerRowTop = yOffset;
+            var headerRowBottom = yOffset + headerRowHeight;
+            
+            if (headerRowBottom >= contentAreaTop && headerRowTop <= contentAreaBottom)
+            {
+                var mouseInHeader = mouseInLegend &&
+                                   mousePos.X >= legendPos.X + padding &&
+                                   mousePos.X <= contentAreaRight &&
+                                   mousePos.Y >= Math.Max(headerRowTop, contentAreaTop) &&
+                                   mousePos.Y < Math.Min(headerRowBottom, contentAreaBottom);
+                
+                if (mouseInHeader)
+                {
+                    // Highlight on hover
+                    var hoverColor = ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.1f));
+                    drawList.AddRectFilled(
+                        new Vector2(legendPos.X + 2, Math.Max(headerRowTop, contentAreaTop)),
+                        new Vector2(contentAreaRight, Math.Min(headerRowBottom, contentAreaBottom)),
+                        hoverColor, 2f);
+                    
+                    ImGui.SetTooltip("Collapse legend");
+                    
+                    if (ImGui.IsMouseClicked(0))
+                    {
+                        onToggleCollapse.Invoke();
+                        collapseToggled = true;
+                    }
+                }
+                
+                // Draw collapse icon (▲) - up arrow when expanded, aligned with series indicators
+                var iconText = "▲";
+                ImGui.SetWindowFontScale(0.75f);
+                var iconTextSize = ImGui.CalcTextSize(iconText);
+                // Align X with series indicators (legendPos.X + padding), center within indicatorSize width
+                var iconX = legendPos.X + padding + (indicatorSize - iconTextSize.X) / 2f;
+                var iconY = yOffset + (headerRowHeight - iconTextSize.Y) / 2f;
+                var iconPos = new Vector2(iconX, iconY);
+                drawList.AddText(iconPos, ImGui.GetColorU32(colors.TextSecondary), iconText);
+                ImGui.SetWindowFontScale(1.0f);
+                
+                // Draw separator line under header
+                var separatorY = headerRowBottom - 1f;
+                if (separatorY >= contentAreaTop && separatorY <= contentAreaBottom)
+                {
+                    var separatorColor = ImGui.GetColorU32(colors.GridLine);
+                    drawList.AddLine(
+                        new Vector2(legendPos.X + padding, separatorY),
+                        new Vector2(contentAreaRight, separatorY),
+                        separatorColor);
+                }
+            }
+            
+            yOffset += headerRowHeight;
+        }
         
         // Draw groups first
         if (data.Groups != null)
@@ -589,7 +811,7 @@ public static class MTGraphLegend
         
         drawList.PopClipRect();
         
-        return new InsideLegendResult(legendPos, new Vector2(legendPos.X + legendWidth, legendPos.Y + legendHeight), scrollOffset);
+        return new InsideLegendResult(legendPos, new Vector2(legendPos.X + legendWidth, legendPos.Y + legendHeight), scrollOffset, collapseToggled);
     }
     
     #endregion

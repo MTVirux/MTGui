@@ -99,6 +99,26 @@ public class MTComboConfig
     public bool ShowBulkActions { get; init; } = true;
     
     /// <summary>
+    /// Whether to show the "All" bulk select button in multi-select. Requires ShowBulkActions to be true.
+    /// </summary>
+    public bool ShowAllBulkAction { get; init; } = false;
+    
+    /// <summary>
+    /// Whether to show the "None" bulk select button in multi-select. Requires ShowBulkActions to be true.
+    /// </summary>
+    public bool ShowNoneBulkAction { get; init; } = false;
+    
+    /// <summary>
+    /// Whether to show "Favorites" bulk select button in multi-select.
+    /// </summary>
+    public bool ShowFavoritesBulkAction { get; init; } = true;
+    
+    /// <summary>
+    /// Whether to show "Invert" bulk select button in multi-select.
+    /// </summary>
+    public bool ShowInvertBulkAction { get; init; } = true;
+    
+    /// <summary>
     /// Maximum number of items to display (for performance). 0 = unlimited.
     /// </summary>
     public int MaxDisplayedItems { get; init; } = 100;
@@ -148,6 +168,11 @@ public class MTComboConfig
     /// Use {0} for name and {1} for ID.
     /// </summary>
     public string ItemDisplayFormat { get; init; } = "{0}  ({1})";
+    
+    /// <summary>
+    /// Maximum popup width in pixels. 0 = use widget width, -1 = no limit (auto-size to content).
+    /// </summary>
+    public float PopupMaxWidth { get; init; } = 0;
 }
 
 /// <summary>

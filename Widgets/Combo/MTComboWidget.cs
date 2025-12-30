@@ -36,8 +36,8 @@ public class MTComboWidget<TItem, TId>
     private Func<TItem, string?>? _tertiaryGroupKeyProvider;
     
     // Events
-    /// <summary>Event fired when single selection changes.</summary>
-    public event Action<TId?>? SelectionChanged;
+    /// <summary>Event fired when single selection changes. Value is the selected item's ID.</summary>
+    public event Action<TId>? SelectionChanged;
     
     /// <summary>Event fired when multi-selection changes.</summary>
     public event Action<IReadOnlySet<TId>>? MultiSelectionChanged;
@@ -207,6 +207,28 @@ public class MTComboWidget<TItem, TId>
         _state.AllSelected = _config.MultiSelect && _config.ShowAllOption;
     }
     
+    /// <summary>
+    /// Syncs favorites from an external source. Call this when external favorites change.
+    /// </summary>
+    /// <param name="favoriteIds">The set of favorite IDs.</param>
+    public void SyncFavorites(IEnumerable<TId> favoriteIds)
+    {
+        _state.Favorites.Clear();
+        foreach (var id in favoriteIds)
+            _state.Favorites.Add(id);
+        _needsSort = true;
+    }
+    
+    /// <summary>
+    /// Checks if an item is marked as favorite.
+    /// </summary>
+    public bool IsFavorite(TId id) => _state.Favorites.Contains(id);
+    
+    /// <summary>
+    /// Gets all favorite IDs.
+    /// </summary>
+    public IReadOnlySet<TId> Favorites => _state.Favorites;
+    
     #endregion
     
     #region Rendering
@@ -249,6 +271,12 @@ public class MTComboWidget<TItem, TId>
         var preview = SelectedItem != null ? FormatItemName(SelectedItem) : _config.Placeholder;
         
         ImGui.SetNextItemWidth(width);
+        
+        // Constrain popup width if configured
+        var popupWidth = _config.PopupMaxWidth > 0 ? _config.PopupMaxWidth : (width > 0 ? Math.Max(width, 200) : 300);
+        var popupMaxHeight = _config.ListHeight > 0 ? _config.ListHeight + 80 : 400; // +80 for search bar and controls
+        ImGui.SetNextWindowSizeConstraints(new Vector2(popupWidth, 0), new Vector2(popupWidth, popupMaxHeight));
+        
         if (!ImGui.BeginCombo($"##{_config.ComboId}", preview, ImGuiComboFlags.HeightLarge))
             return false;
         
@@ -263,6 +291,12 @@ public class MTComboWidget<TItem, TId>
         var preview = BuildMultiSelectPreview();
         
         ImGui.SetNextItemWidth(width);
+        
+        // Constrain popup width if configured
+        var popupWidth = _config.PopupMaxWidth > 0 ? _config.PopupMaxWidth : (width > 0 ? Math.Max(width, 200) : 300);
+        var popupMaxHeight = _config.ListHeight > 0 ? _config.ListHeight + 80 : 400; // +80 for search bar and controls
+        ImGui.SetNextWindowSizeConstraints(new Vector2(popupWidth, 0), new Vector2(popupWidth, popupMaxHeight));
+        
         if (!ImGui.BeginCombo($"##{_config.ComboId}", preview, ImGuiComboFlags.HeightLarge))
             return false;
         
@@ -274,8 +308,11 @@ public class MTComboWidget<TItem, TId>
     
     private string BuildMultiSelectPreview()
     {
-        if (_state.AllSelected || _state.SelectedIds.Count == 0)
+        if (_state.AllSelected)
             return _config.AllOptionLabel;
+        
+        if (_state.SelectedIds.Count == 0)
+            return _config.ShowAllOption ? _config.AllOptionLabel : _config.Placeholder;
         
         if (_state.SelectedIds.Count == 1 && _items != null)
         {
@@ -356,21 +393,87 @@ public class MTComboWidget<TItem, TId>
             // Bulk actions for multi-select
             if (_config.MultiSelect && _config.ShowBulkActions)
             {
-                ImGui.SameLine();
-                if (ImGui.SmallButton("All"))
+                // All button
+                if (_config.ShowAllBulkAction)
                 {
-                    _state.AllSelected = true;
-                    _state.SelectedIds.Clear();
-                    changed = true;
-                    MultiSelectionChanged?.Invoke(_state.SelectedIds);
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("All"))
+                    {
+                        _state.AllSelected = true;
+                        _state.SelectedIds.Clear();
+                        changed = true;
+                        MultiSelectionChanged?.Invoke(_state.SelectedIds);
+                    }
                 }
-                ImGui.SameLine();
-                if (ImGui.SmallButton("None"))
+                
+                // None button
+                if (_config.ShowNoneBulkAction)
                 {
-                    _state.AllSelected = false;
-                    _state.SelectedIds.Clear();
-                    changed = true;
-                    MultiSelectionChanged?.Invoke(_state.SelectedIds);
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("None"))
+                    {
+                        _state.AllSelected = false;
+                        _state.SelectedIds.Clear();
+                        changed = true;
+                        MultiSelectionChanged?.Invoke(_state.SelectedIds);
+                    }
+                }
+                
+                // Favorites bulk action
+                if (_config.ShowFavoritesBulkAction && _state.Favorites.Count > 0)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("\u2605")) // Star character
+                    {
+                        _state.AllSelected = false;
+                        _state.SelectedIds.Clear();
+                        foreach (var favId in _state.Favorites)
+                        {
+                            _state.SelectedIds.Add(favId);
+                        }
+                        changed = true;
+                        MultiSelectionChanged?.Invoke(_state.SelectedIds);
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Select favorites only");
+                    }
+                }
+                
+                // Invert bulk action
+                if (_config.ShowInvertBulkAction && _items != null)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("\u21C4")) // Swap arrows character
+                    {
+                        if (_state.AllSelected)
+                        {
+                            // Invert from "all" means none
+                            _state.AllSelected = false;
+                            _state.SelectedIds.Clear();
+                        }
+                        else
+                        {
+                            var allIds = _items.Select(i => i.Id).ToHashSet();
+                            var inverted = allIds.Except(_state.SelectedIds).ToHashSet();
+                            _state.SelectedIds.Clear();
+                            foreach (var id in inverted)
+                                _state.SelectedIds.Add(id);
+                            
+                            // If all are now selected, switch to "All" mode
+                            if (_state.SelectedIds.Count == allIds.Count && _config.ShowAllOption)
+                            {
+                                _state.AllSelected = true;
+                                _state.SelectedIds.Clear();
+                            }
+                        }
+                        changed = true;
+                        MultiSelectionChanged?.Invoke(_state.SelectedIds);
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Invert selection");
+                    }
                 }
             }
         }
@@ -472,9 +575,8 @@ public class MTComboWidget<TItem, TId>
                 ImGui.SameLine();
             }
             
-            // Group header
-            var headerFlags = allSelected ? ImGuiTreeNodeFlags.None : ImGuiTreeNodeFlags.DefaultOpen;
-            if (ImGui.CollapsingHeader(group.Key, headerFlags))
+            // Group header - starts collapsed
+            if (ImGui.CollapsingHeader(group.Key))
             {
                 ImGui.Indent();
                 
@@ -543,8 +645,8 @@ public class MTComboWidget<TItem, TId>
                 ImGui.SameLine();
             }
             
-            var subFlags = allSelected ? ImGuiTreeNodeFlags.None : ImGuiTreeNodeFlags.DefaultOpen;
-            if (ImGui.TreeNodeEx(subGroup.Key, subFlags))
+            // Sub-group header - starts collapsed
+            if (ImGui.TreeNodeEx(subGroup.Key))
             {
                 // Tertiary grouping or items
                 if (_tertiaryGroupKeyProvider != null)
@@ -611,8 +713,8 @@ public class MTComboWidget<TItem, TId>
                 ImGui.SameLine();
             }
             
-            var tertFlags = allSelected ? ImGuiTreeNodeFlags.None : ImGuiTreeNodeFlags.DefaultOpen;
-            if (ImGui.TreeNodeEx(tertGroup.Key, tertFlags))
+            // Tertiary group header - starts collapsed
+            if (ImGui.TreeNodeEx(tertGroup.Key))
             {
                 foreach (var item in tertItems)
                 {

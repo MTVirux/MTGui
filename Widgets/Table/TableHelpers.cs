@@ -92,16 +92,14 @@ public static class MTTableHelpers
         Vector4? color = null)
     {
         var textSize = ImGui.CalcTextSize(label);
-        var cellSize = ImGui.GetContentRegionAvail();
+        var cellWidth = ImGui.GetContentRegionAvail().X;
         var style = ImGui.GetStyle();
         
-        const float sortArrowWidth = 20f;
-        var effectiveCellWidth = sortable ? cellSize.X - sortArrowWidth : cellSize.X;
-        
+        // Calculate horizontal offset - GetContentRegionAvail gives actual usable space
         float offsetX = hAlign switch
         {
-            MTTableHorizontalAlignment.Center => (effectiveCellWidth - textSize.X) * 0.5f,
-            MTTableHorizontalAlignment.Right => effectiveCellWidth - textSize.X,
+            MTTableHorizontalAlignment.Center => (cellWidth - textSize.X) * 0.5f,
+            MTTableHorizontalAlignment.Right => cellWidth - textSize.X,
             _ => 0f
         };
         
@@ -112,23 +110,32 @@ public static class MTTableHelpers
             _ => 0f
         };
         
-        if (offsetX > 0f || offsetY != 0f)
-        {
-            var cursorPos = ImGui.GetCursorPos();
-            ImGui.SetCursorPos(new Vector2(cursorPos.X + Math.Max(0f, offsetX), cursorPos.Y + offsetY));
-        }
+        // Store original cursor position for text rendering
+        var startCursorPos = ImGui.GetCursorPos();
+        
+        // Render empty TableHeader to get sort arrow and click handling
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        ImGui.TableHeader(string.Empty);
+        ImGui.PopStyleVar();
+        
+        // Go back and render aligned text
+        ImGui.SameLine();
+        var afterHeaderCursor = ImGui.GetCursorPos();
+        ImGui.SetCursorPos(new Vector2(
+            startCursorPos.X + Math.Max(0f, offsetX),
+            startCursorPos.Y + offsetY));
         
         if (color.HasValue)
         {
-            ImGui.PushStyleColor(ImGuiCol.Text, color.Value);
+            ImGui.TextColored(color.Value, label);
         }
-        
-        ImGui.TableHeader(label);
-        
-        if (color.HasValue)
+        else
         {
-            ImGui.PopStyleColor();
+            ImGui.TextUnformatted(label);
         }
+        
+        // Restore cursor to after header for proper layout
+        ImGui.SetCursorPos(afterHeaderCursor);
     }
     
     /// <summary>
