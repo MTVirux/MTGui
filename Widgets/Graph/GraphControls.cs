@@ -336,7 +336,7 @@ public static class MTGraphControls
     }
     
     /// <summary>
-    /// Draws the value controls (- value +).
+    /// Draws the value controls (- value +) with editable input field.
     /// </summary>
     private static bool DrawValueControls(
         ImDrawListPtr drawList,
@@ -379,16 +379,33 @@ public static class MTGraphControls
             changed = true;
         }
         
-        // Value box
+        // Value input box - use ImGui InputInt for direct editing
         var valueBoxPos = new Vector2(minusBtnPos.X + smallButtonWidth + spacing, contentY + 2);
-        drawList.AddRectFilled(valueBoxPos, new Vector2(valueBoxPos.X + valueBoxWidth, valueBoxPos.Y + rowHeight - 4), 
-            ImGui.GetColorU32(new Vector4(0.1f, 0.1f, 0.1f, 0.8f)), rounding);
-        drawList.AddRect(valueBoxPos, new Vector2(valueBoxPos.X + valueBoxWidth, valueBoxPos.Y + rowHeight - 4), 
-            ImGui.GetColorU32(colors.GridLine), rounding);
-        var valueText = currentValue.ToString();
-        var valueTextSize = ImGui.CalcTextSize(valueText);
-        drawList.AddText(new Vector2(valueBoxPos.X + (valueBoxWidth - valueTextSize.X) / 2, valueBoxPos.Y + (rowHeight - 4 - valueTextSize.Y) / 2), 
-            ImGui.GetColorU32(colors.Neutral), valueText);
+        var inputHeight = rowHeight - 4;
+        
+        // Position the cursor for ImGui widget
+        ImGui.SetCursorScreenPos(valueBoxPos);
+        
+        // Style the input to match drawer theme
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, rounding);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(4, (inputHeight - ImGui.GetTextLineHeight()) / 2));
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0.1f, 0.1f, 0.1f, 0.8f));
+        ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, new Vector4(0.15f, 0.15f, 0.15f, 0.9f));
+        ImGui.PushStyleColor(ImGuiCol.FrameBgActive, new Vector4(0.2f, 0.2f, 0.2f, 1.0f));
+        ImGui.PushStyleColor(ImGuiCol.Border, colors.GridLine);
+        ImGui.PushStyleColor(ImGuiCol.Text, colors.Neutral);
+        
+        ImGui.SetNextItemWidth(valueBoxWidth);
+        var inputValue = currentValue;
+        if (ImGui.InputInt("##GraphValueInput", ref inputValue, 0, 0))
+        {
+            // Clamp the value to valid range
+            newValue = Math.Clamp(inputValue, 1, 999);
+            changed = newValue != currentValue;
+        }
+        
+        ImGui.PopStyleColor(5);
+        ImGui.PopStyleVar(2);
         
         // "+" button
         var plusBtnPos = new Vector2(valueBoxPos.X + valueBoxWidth + spacing, contentY + 2);
