@@ -1,3 +1,5 @@
+using MTGui.Common;
+
 namespace MTGui.Graph;
 
 /// <summary>
@@ -136,6 +138,11 @@ public class MTGraphConfig
     public bool SimulateRealTimeUpdates { get; set; } = true;
     
     /// <summary>
+    /// Number format configuration for numeric values displayed on the graph.
+    /// </summary>
+    public NumberFormatConfig NumberFormat { get; set; } = new();
+    
+    /// <summary>
     /// Style configuration for the graph.
     /// </summary>
     public MTGraphStyleConfig Style { get; set; } = new();
@@ -176,6 +183,9 @@ public interface IMTGraphSettings
     // Time range settings
     int TimeRangeValue { get; set; }
     MTTimeUnit TimeRangeUnit { get; set; }
+    
+    // Number format settings
+    NumberFormatConfig NumberFormat { get; set; }
 }
 
 /// <summary>
@@ -213,6 +223,9 @@ public class MTGraphSettings : IMTGraphSettings
     // Time range settings
     public int TimeRangeValue { get; set; } = 7;
     public MTTimeUnit TimeRangeUnit { get; set; } = MTTimeUnit.Days;
+    
+    // Number format settings
+    public NumberFormatConfig NumberFormat { get; set; } = new();
     
     /// <summary>
     /// Calculates the auto-scroll time range in seconds from value and unit.
@@ -257,5 +270,6 @@ public class MTGraphSettings : IMTGraphSettings
         ShowControlsDrawer = other.ShowControlsDrawer;
         TimeRangeValue = other.TimeRangeValue;
         TimeRangeUnit = other.TimeRangeUnit;
+        NumberFormat.CopyFrom(other.NumberFormat);
     }
 }
