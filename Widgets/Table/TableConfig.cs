@@ -1,3 +1,5 @@
+using MTGui.Common;
+
 namespace MTGui.Table;
 
 /// <summary>
@@ -65,6 +67,11 @@ public interface IMTTableSettings
     /// Whether to freeze the header row when scrolling.
     /// </summary>
     bool FreezeHeader { get; set; }
+    
+    /// <summary>
+    /// Number format configuration for numeric values in the table.
+    /// </summary>
+    NumberFormatConfig NumberFormat { get; set; }
 }
 
 /// <summary>
@@ -107,6 +114,9 @@ public class MTTableSettings : IMTTableSettings
     
     /// <inheritdoc/>
     public bool FreezeHeader { get; set; } = true;
+    
+    /// <inheritdoc/>
+    public NumberFormatConfig NumberFormat { get; set; } = new();
 }
 
 /// <summary>

@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using MTGui.Common;
 using MTGui.Graph;
 using ImGui = Dalamud.Bindings.ImGui.ImGui;
 
@@ -258,18 +259,37 @@ public static class MTTableHelpers
     }
     
     /// <summary>
+    /// Formats a number using the specified format configuration.
+    /// </summary>
+    /// <param name="value">The value to format.</param>
+    /// <param name="config">The number format configuration.</param>
+    /// <returns>Formatted string.</returns>
+    public static string FormatNumber(long value, NumberFormatConfig? config)
+    {
+        return MTNumberFormatter.Format(value, config);
+    }
+    
+    /// <summary>
+    /// Formats a number using the specified format configuration.
+    /// </summary>
+    /// <param name="value">The value to format.</param>
+    /// <param name="config">The number format configuration.</param>
+    /// <returns>Formatted string.</returns>
+    public static string FormatNumber(double value, NumberFormatConfig? config)
+    {
+        return MTNumberFormatter.Format(value, config);
+    }
+    
+    /// <summary>
     /// Formats a number with optional compact notation.
     /// </summary>
     /// <param name="value">The value to format.</param>
     /// <param name="compact">Whether to use compact notation.</param>
     /// <returns>Formatted string.</returns>
+    [Obsolete("Use FormatNumber(value, NumberFormatConfig) instead.")]
     public static string FormatNumber(long value, bool compact = false)
     {
-        if (!compact)
-        {
-            return value.ToString("N0");
-        }
-        
-        return MTFormatUtils.FormatAbbreviated(value);
+        var config = compact ? NumberFormatConfig.Compact : NumberFormatConfig.Default;
+        return MTNumberFormatter.Format(value, config);
     }
 }
