@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
+using MTGui.Common;
 
 namespace MTGui.Graph;
 
@@ -134,7 +135,7 @@ public static class MTGraphValueLabels
                 continue;
             
             var pixelPos = ImPlot.PlotToPixels(lastX, lastY);
-            var valueText = MTFormatUtils.FormatAbbreviated((float)lastY);
+            var valueText = MTNumberFormatter.FormatCompact((float)lastY);
             var labelSize = ImGui.CalcTextSize(valueText);
             
             labels.Add(new PositionedLabel(valueText, (float)lastY, color, pixelPos, labelSize, name));
@@ -425,7 +426,7 @@ public static class MTGraphValueLabels
         // Apply offset
         var labelPos = new Vector2(pixelPos.X + offsetX, pixelPos.Y + offsetY);
         
-        var label = MTFormatUtils.FormatAbbreviated(value);
+        var label = MTNumberFormatter.FormatCompact(value);
         var labelSize = ImGui.CalcTextSize(label);
         
         var padding = style.ValueLabelPadding;
@@ -485,7 +486,7 @@ public static class MTGraphValueLabels
             // Stack labels vertically
             var labelY = pixelPos.Y + (i - sorted.Count / 2f) * rowHeight;
             
-            var label = $"{name}: {MTFormatUtils.FormatAbbreviated(value)}";
+            var label = $"{name}: {MTNumberFormatter.FormatCompact(value)}";
             var labelSize = ImGui.CalcTextSize(label);
             var padding = style.ValueLabelPadding;
             

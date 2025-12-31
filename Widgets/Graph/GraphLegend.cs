@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
+using MTGui.Common;
 
 namespace MTGui.Graph;
 
@@ -249,7 +250,7 @@ public static class MTGraphLegend
                     var groupInfo = seriesItem.GroupNames is { Count: > 0 } 
                         ? $"\nGroups: {string.Join(", ", seriesItem.GroupNames)}" 
                         : "";
-                    ImGui.SetTooltip($"{seriesItem.Name}: {MTFormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility");
+                    ImGui.SetTooltip($"{seriesItem.Name}: {MTNumberFormatter.FormatCompact(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility");
                 }
             }
         }
@@ -804,7 +805,7 @@ public static class MTGraphLegend
                         ? $"\nGroups: {string.Join(", ", series.GroupNames)}" 
                         : "";
                     var scrollHint = needsScrolling ? "\nScroll to see more" : "";
-                    ImGui.SetTooltip($"{series.Name}: {MTFormatUtils.FormatAbbreviated(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility{scrollHint}");
+                    ImGui.SetTooltip($"{series.Name}: {MTNumberFormatter.FormatCompact(lastValue)}{statusText}{groupInfo}\nClick to toggle visibility{scrollHint}");
                 }
             }
         }
@@ -911,7 +912,7 @@ public static class MTGraphLegend
             var lastValue = series.PointCount > 0 ? (float)series.YValues[series.PointCount - 1] : 0f;
             var statusText = isHidden ? " (hidden)" : "";
             var scrollHint = needsScrolling ? "\nScroll to see more" : "";
-            ImGui.SetTooltip($"{series.Name}: {MTFormatUtils.FormatAbbreviated(lastValue)}{statusText}\nClick to toggle visibility{scrollHint}");
+            ImGui.SetTooltip($"{series.Name}: {MTNumberFormatter.FormatCompact(lastValue)}{statusText}\nClick to toggle visibility{scrollHint}");
         }
     }
     

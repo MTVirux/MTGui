@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
+using MTGui.Common;
 
 namespace MTGui.Graph;
 
@@ -48,7 +49,7 @@ public static class MTGraphDrawing
     /// </summary>
     public static readonly unsafe ImPlotFormatter YAxisFormatter = (double value, byte* buff, int size, void* userData) =>
     {
-        var formatted = MTFormatUtils.FormatAbbreviated(value);
+        var formatted = MTNumberFormatter.FormatCompact(value);
         var len = Math.Min(formatted.Length, size - 1);
         for (var i = 0; i < len; i++)
             buff[i] = (byte)formatted[i];
@@ -108,7 +109,7 @@ public static class MTGraphDrawing
         }
         
         // Draw value label on Y axis (clipped to plot area so it goes under the Y-axis)
-        var valueLabel = MTFormatUtils.FormatAbbreviated(valueAtMouse);
+        var valueLabel = MTNumberFormatter.FormatCompact(valueAtMouse);
         var labelSize = ImGui.CalcTextSize(valueLabel);
         var labelPos = new Vector2(hRight.X - labelSize.X - 6, hRight.Y - labelSize.Y / 2);
         
@@ -197,11 +198,12 @@ public static class MTGraphDrawing
     /// </summary>
     /// <param name="yValue">The Y value (in plot coordinates) where the line should be drawn.</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawCurrentPriceLine(double yValue, MTGraphStyleConfig? style = null)
+    /// <param name="numberFormat">Optional number format configuration.</param>
+    public static void DrawCurrentPriceLine(double yValue, MTGraphStyleConfig? style = null, NumberFormatConfig? numberFormat = null)
     {
         style ??= MTGraphStyleConfig.Default;
         var colors = style.Colors;
-        var label = MTFormatUtils.FormatAbbreviated(yValue);
+        var label = MTNumberFormatter.Format(yValue, numberFormat ?? NumberFormatConfig.Compact);
         DrawPriceLine(yValue, label, colors.CurrentPriceLine, style.PriceLineThickness, dashed: true, style);
     }
     

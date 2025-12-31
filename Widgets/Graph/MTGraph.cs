@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
+using MTGui.Common;
 
 namespace MTGui.Graph;
 
@@ -466,7 +467,7 @@ public class MTGraph
                     {
                         if (labelBounds.Contains(mousePos))
                         {
-                            var lines = new List<string> { $"{labelBounds.SeriesName}: {MTFormatUtils.FormatAbbreviated(labelBounds.Value)}" };
+                            var lines = new List<string> { $"{labelBounds.SeriesName}: {MTNumberFormatter.Format(labelBounds.Value, _config.NumberFormat)}" };
                             var color = new Vector4(labelBounds.Color.X, labelBounds.Color.Y, labelBounds.Color.Z, 1f);
                             MTGraphTooltips.DrawTooltipBox(mousePos, lines.ToArray(), color, _config.Style);
                             break;
@@ -722,7 +723,7 @@ public class MTGraph
                 }
                 
                 // Add value for nearest series
-                lines.Add($"{nearestSeriesName}: {MTFormatUtils.FormatAbbreviated(nearestValue)}");
+                lines.Add($"{nearestSeriesName}: {MTNumberFormatter.Format(nearestValue, _config.NumberFormat)}");
                 
                 MTGraphTooltips.DrawTooltipBox(screenPos, lines.ToArray(), new Vector4(nearestColor.X, nearestColor.Y, nearestColor.Z, 1f), _config.Style);
             }
