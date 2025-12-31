@@ -1,9 +1,16 @@
+using MTGui.Common;
+
 namespace MTGui.Graph;
 
 /// <summary>
 /// Utility class for formatting values in a human-readable way.
 /// Provides consistent formatting for large numbers with K/M/B abbreviations.
 /// </summary>
+/// <remarks>
+/// This class is maintained for backward compatibility.
+/// For new code, use <see cref="MTNumberFormatter"/> instead.
+/// </remarks>
+[Obsolete("Use MTNumberFormatter from MTGui.Common instead. This class is maintained for backward compatibility.")]
 public static class MTFormatUtils
 {
     /// <summary>
@@ -11,23 +18,16 @@ public static class MTFormatUtils
     /// </summary>
     /// <param name="value">The value to format.</param>
     /// <returns>Formatted string like "1.5M" or "500K".</returns>
-    public static string FormatAbbreviated(double value)
-    {
-        return value switch
-        {
-            >= 1_000_000_000 => $"{value / 1_000_000_000:0.##}B",
-            >= 1_000_000 => $"{value / 1_000_000:0.##}M",
-            >= 1_000 => $"{value / 1_000:0.##}K",
-            _ => $"{value:0.##}"
-        };
-    }
+    [Obsolete("Use MTNumberFormatter.FormatCompact() instead.")]
+    public static string FormatAbbreviated(double value) => MTNumberFormatter.FormatCompact(value);
 
     /// <summary>
     /// Formats a numeric value with K/M/B abbreviation (integer overload).
     /// </summary>
     /// <param name="value">The value to format.</param>
     /// <returns>Formatted string like "1.5M" or "500K".</returns>
-    public static string FormatAbbreviated(long value) => FormatAbbreviated((double)value);
+    [Obsolete("Use MTNumberFormatter.FormatCompact() instead.")]
+    public static string FormatAbbreviated(long value) => MTNumberFormatter.FormatCompact(value);
 
     /// <summary>
     /// Formats a percentage value.
@@ -35,7 +35,8 @@ public static class MTFormatUtils
     /// <param name="value">The percentage value (0-100 scale).</param>
     /// <param name="decimals">Number of decimal places.</param>
     /// <returns>Formatted string like "45.5%".</returns>
-    public static string FormatPercentage(double value, int decimals = 1) => $"{value.ToString($"F{decimals}")}%";
+    [Obsolete("Use MTNumberFormatter.FormatPercentage() instead.")]
+    public static string FormatPercentage(double value, int decimals = 1) => MTNumberFormatter.FormatPercentage(value, decimals);
 
     /// <summary>
     /// Formats a value with number grouping (thousands separator) and optional decimals.
@@ -43,11 +44,10 @@ public static class MTFormatUtils
     /// <param name="value">The value to format.</param>
     /// <param name="epsilon">Epsilon for floating point comparisons to determine if value is an integer.</param>
     /// <returns>Formatted string with thousands separators.</returns>
+    [Obsolete("Use MTNumberFormatter.FormatStandard() instead.")]
     public static string FormatWithSeparators(float value, float epsilon = 0.0001f)
     {
-        if (Math.Abs(value - Math.Truncate(value)) < epsilon)
-            return ((long)value).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
-        return value.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+        return MTNumberFormatter.FormatStandard(value);
     }
 
     /// <summary>
@@ -55,14 +55,6 @@ public static class MTFormatUtils
     /// </summary>
     /// <param name="duration">The duration to format.</param>
     /// <returns>Formatted string like "2h 30m" or "5d 12h".</returns>
-    public static string FormatDuration(TimeSpan duration)
-    {
-        if (duration.TotalDays >= 1)
-            return $"{(int)duration.TotalDays}d {duration.Hours}h";
-        if (duration.TotalHours >= 1)
-            return $"{(int)duration.TotalHours}h {duration.Minutes}m";
-        if (duration.TotalMinutes >= 1)
-            return $"{(int)duration.TotalMinutes}m {duration.Seconds}s";
-        return $"{duration.Seconds}s";
-    }
+    [Obsolete("Use MTNumberFormatter.FormatDuration() instead.")]
+    public static string FormatDuration(TimeSpan duration) => MTNumberFormatter.FormatDuration(duration);
 }
