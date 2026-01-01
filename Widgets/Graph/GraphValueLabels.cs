@@ -94,10 +94,12 @@ public static class MTGraphValueLabels
     /// <param name="style">Optional style configuration.</param>
     /// <param name="offsetX">Additional horizontal offset for all labels. Default: 0</param>
     /// <param name="offsetY">Additional vertical offset for all labels. Default: 0</param>
+    /// <param name="numberFormat">Optional number format configuration. If null, uses Compact format.</param>
     /// <returns>List of label bounds for hover detection.</returns>
-    public static List<ValueLabelBounds> DrawCurrentValueLabels(IReadOnlyList<(string Name, double LastX, double LastY, Vector3 Color)> seriesData, MTGraphStyleConfig? style = null, float offsetX = 0f, float offsetY = 0f)
+    public static List<ValueLabelBounds> DrawCurrentValueLabels(IReadOnlyList<(string Name, double LastX, double LastY, Vector3 Color)> seriesData, MTGraphStyleConfig? style = null, float offsetX = 0f, float offsetY = 0f, NumberFormatConfig? numberFormat = null)
     {
         style ??= MTGraphStyleConfig.Default;
+        numberFormat ??= NumberFormatConfig.Compact;
         
         if (seriesData.Count == 0)
             return new List<ValueLabelBounds>();
@@ -135,7 +137,7 @@ public static class MTGraphValueLabels
                 continue;
             
             var pixelPos = ImPlot.PlotToPixels(lastX, lastY);
-            var valueText = MTNumberFormatter.FormatCompact((float)lastY);
+            var valueText = MTNumberFormatter.Format((float)lastY, numberFormat);
             var labelSize = ImGui.CalcTextSize(valueText);
             
             labels.Add(new PositionedLabel(valueText, (float)lastY, color, pixelPos, labelSize, name));

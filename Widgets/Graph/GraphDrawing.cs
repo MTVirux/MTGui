@@ -68,9 +68,11 @@ public static class MTGraphDrawing
     /// <param name="mouseY">Mouse Y position in plot coordinates.</param>
     /// <param name="valueAtMouse">The Y value to display in the label.</param>
     /// <param name="style">Optional style configuration.</param>
-    public static void DrawCrosshair(double mouseX, double mouseY, float valueAtMouse, MTGraphStyleConfig? style = null)
+    /// <param name="numberFormat">Optional number format configuration. If null, uses Compact format.</param>
+    public static void DrawCrosshair(double mouseX, double mouseY, float valueAtMouse, MTGraphStyleConfig? style = null, NumberFormatConfig? numberFormat = null)
     {
         style ??= MTGraphStyleConfig.Default;
+        numberFormat ??= NumberFormatConfig.Compact;
         var colors = style.Colors;
         
         var drawList = ImPlot.GetPlotDrawList();
@@ -109,7 +111,7 @@ public static class MTGraphDrawing
         }
         
         // Draw value label on Y axis (clipped to plot area so it goes under the Y-axis)
-        var valueLabel = MTNumberFormatter.FormatCompact(valueAtMouse);
+        var valueLabel = MTNumberFormatter.Format(valueAtMouse, numberFormat);
         var labelSize = ImGui.CalcTextSize(valueLabel);
         var labelPos = new Vector2(hRight.X - labelSize.X - 6, hRight.Y - labelSize.Y / 2);
         

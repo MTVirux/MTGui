@@ -707,7 +707,7 @@ public class MTGraph
         
         if (foundHoveredSeries)
         {
-            MTGraphDrawing.DrawCrosshair(mouseX, mouseY, nearestValue, _config.Style);
+            MTGraphDrawing.DrawCrosshair(mouseX, mouseY, nearestValue, _config.Style, _config.NumberFormat);
             
             // Draw tooltip for multi-series
             if (data.HasMultipleSeries)
@@ -819,7 +819,7 @@ public class MTGraph
         
         if (seriesData.Count > 0)
         {
-            return MTGraphValueLabels.DrawCurrentValueLabels(seriesData, _config.Style, _config.ValueLabelOffsetX, _config.ValueLabelOffsetY);
+            return MTGraphValueLabels.DrawCurrentValueLabels(seriesData, _config.Style, _config.ValueLabelOffsetX, _config.ValueLabelOffsetY, _config.NumberFormat);
         }
         
         return new List<MTGraphValueLabels.ValueLabelBounds>();
