@@ -184,6 +184,7 @@ public class MTComboWidget<TItem, TId>
     public void SetSelection(TId? id)
     {
         _state.SelectedId = id;
+        _state.AllSelected = false;
     }
     
     /// <summary>
@@ -816,6 +817,7 @@ public class MTComboWidget<TItem, TId>
             if (ImGui.Selectable(displayText, isSelected))
             {
                 _state.SelectedId = item.Id;
+                _state.AllSelected = false;
                 changed = true;
                 SelectionChanged?.Invoke(item.Id);
             }
