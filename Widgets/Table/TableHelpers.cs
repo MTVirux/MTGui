@@ -279,17 +279,4 @@ public static class MTTableHelpers
     {
         return MTNumberFormatter.Format(value, config);
     }
-    
-    /// <summary>
-    /// Formats a number with optional compact notation.
-    /// </summary>
-    /// <param name="value">The value to format.</param>
-    /// <param name="compact">Whether to use compact notation.</param>
-    /// <returns>Formatted string.</returns>
-    [Obsolete("Use FormatNumber(value, NumberFormatConfig) instead.")]
-    public static string FormatNumber(long value, bool compact = false)
-    {
-        var config = compact ? NumberFormatConfig.Compact : NumberFormatConfig.Default;
-        return MTNumberFormatter.Format(value, config);
-    }
 }
