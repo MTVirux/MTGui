@@ -9,6 +9,19 @@ namespace MTGui.Graph;
 /// </summary>
 public static class MTGraphControls
 {
+    #region Helper Methods
+    
+    /// <summary>
+    /// Checks if mouse interactions should be processed.
+    /// Returns false if another window is on top blocking interactions.
+    /// </summary>
+    private static bool CanProcessInteraction()
+    {
+        return ImGui.IsWindowHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem);
+    }
+    
+    #endregion
+    
     #region Time Unit Names
     
     /// <summary>
@@ -273,14 +286,14 @@ public static class MTGraphControls
         drawList.AddCircle(iconCenter, iconRadius, iconColor, 8, 1.5f);
         drawList.AddCircleFilled(iconCenter, 2f, iconColor);
         
-        // Handle toggle button click
-        if (buttonHovered && ImGui.IsMouseClicked(0))
+        // Handle toggle button click (only if no other window is blocking)
+        if (buttonHovered && CanProcessInteraction() && ImGui.IsMouseClicked(0))
         {
             newIsOpen = !isOpen;
         }
         
-        // Show tooltip
-        if (buttonHovered)
+        // Show tooltip (only if window is not blocked)
+        if (buttonHovered && CanProcessInteraction())
         {
             ImGui.SetTooltip(isOpen ? "Close controls" : "Open controls");
         }
@@ -332,7 +345,7 @@ public static class MTGraphControls
         var labelColor = ImGui.GetColorU32(autoScrollEnabled ? colors.TextPrimary : colors.TextSecondary);
         drawList.AddText(labelPos, labelColor, "Auto-scroll");
         
-        return checkboxRowHovered && ImGui.IsMouseClicked(0);
+        return checkboxRowHovered && CanProcessInteraction() && ImGui.IsMouseClicked(0);
     }
     
     /// <summary>
@@ -373,7 +386,7 @@ public static class MTGraphControls
         drawList.AddText(new Vector2(minusBtnPos.X + (smallButtonWidth - minusTextSize.X) / 2, minusBtnPos.Y + (rowHeight - 4 - minusTextSize.Y) / 2), 
             ImGui.GetColorU32(colors.TextPrimary), minusText);
         
-        if (minusBtnHovered && ImGui.IsMouseClicked(0) && currentValue > 1)
+        if (minusBtnHovered && CanProcessInteraction() && ImGui.IsMouseClicked(0) && currentValue > 1)
         {
             newValue = currentValue - 1;
             changed = true;
@@ -421,7 +434,7 @@ public static class MTGraphControls
         drawList.AddText(new Vector2(plusBtnPos.X + (smallButtonWidth - plusTextSize.X) / 2, plusBtnPos.Y + (rowHeight - 4 - plusTextSize.Y) / 2), 
             ImGui.GetColorU32(colors.TextPrimary), plusText);
         
-        if (plusBtnHovered && ImGui.IsMouseClicked(0) && currentValue < 999)
+        if (plusBtnHovered && CanProcessInteraction() && ImGui.IsMouseClicked(0) && currentValue < 999)
         {
             newValue = currentValue + 1;
             changed = true;
@@ -480,7 +493,7 @@ public static class MTGraphControls
             drawList.AddText(new Vector2(unitBtnPos.X + (unitButtonWidth - unitTextSize.X) / 2, unitBtnPos.Y + (unitButtonHeight - unitTextSize.Y) / 2), 
                 unitTextColor, unitText);
             
-            if (unitBtnHovered && ImGui.IsMouseClicked(0))
+            if (unitBtnHovered && CanProcessInteraction() && ImGui.IsMouseClicked(0))
             {
                 newUnit = (MTTimeUnit)i;
                 changed = true;
@@ -580,12 +593,18 @@ public static class MTGraphControls
     
     /// <summary>
     /// Checks if the mouse is within the controls drawer bounds.
+    /// Also checks that no other window is on top blocking the interaction.
     /// </summary>
     /// <param name="result">The drawer result from the previous draw call.</param>
-    /// <returns>True if mouse is over the drawer.</returns>
+    /// <returns>True if mouse is over the drawer and the window is hovered.</returns>
     public static bool IsMouseOverDrawer(ControlsDrawerResult result)
     {
         if (!result.IsValid) return false;
+        
+        // Check if the current window is hovered (no other window on top blocking it)
+        if (!ImGui.IsWindowHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem))
+            return false;
+        
         var mousePos = ImGui.GetMousePos();
         return mousePos.X >= result.BoundsMin.X && mousePos.X <= result.BoundsMax.X &&
                mousePos.Y >= result.BoundsMin.Y && mousePos.Y <= result.BoundsMax.Y;

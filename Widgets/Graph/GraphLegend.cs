@@ -10,6 +10,19 @@ namespace MTGui.Graph;
 /// </summary>
 public static class MTGraphLegend
 {
+    #region Helper Methods
+    
+    /// <summary>
+    /// Checks if mouse interactions should be processed.
+    /// Returns false if another window is on top blocking interactions.
+    /// </summary>
+    private static bool CanProcessInteraction()
+    {
+        return ImGui.IsWindowHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem);
+    }
+    
+    #endregion
+    
     #region Outside Legend (Child Window)
     
     /// <summary>
@@ -474,7 +487,7 @@ public static class MTGraphLegend
             var mouseInButton = collapsedMousePos.X >= collapsedPos.X && collapsedMousePos.X <= collapsedPos.X + collapsedSize &&
                                collapsedMousePos.Y >= collapsedPos.Y && collapsedMousePos.Y <= collapsedPos.Y + collapsedSize;
             
-            if (mouseInButton)
+            if (mouseInButton && CanProcessInteraction())
             {
                 // Show tooltip
                 ImGui.SetTooltip("Expand legend");
@@ -536,8 +549,8 @@ public static class MTGraphLegend
         var mouseInLegend = mousePos.X >= legendPos.X && mousePos.X <= legendPos.X + legendWidth &&
                            mousePos.Y >= legendPos.Y && mousePos.Y <= legendPos.Y + legendHeight;
         
-        // Handle mouse wheel scrolling
-        if (mouseInLegend && needsScrolling)
+        // Handle mouse wheel scrolling (only if no other window is blocking)
+        if (mouseInLegend && needsScrolling && CanProcessInteraction())
         {
             var wheel = ImGui.GetIO().MouseWheel;
             if (wheel != 0)
@@ -574,7 +587,7 @@ public static class MTGraphLegend
                                    mousePos.Y >= Math.Max(headerRowTop, contentAreaTop) &&
                                    mousePos.Y < Math.Min(headerRowBottom, contentAreaBottom);
                 
-                if (mouseInHeader)
+                if (mouseInHeader && CanProcessInteraction())
                 {
                     // Highlight on hover
                     var hoverColor = ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.1f));
@@ -637,12 +650,12 @@ public static class MTGraphLegend
                                     mousePos.Y < Math.Min(rowBottom, contentAreaBottom) &&
                                     rowTop >= contentAreaTop && rowBottom <= contentAreaBottom;
                     
-                    if (mouseInRow && ImGui.IsMouseClicked(0))
+                    if (mouseInRow && CanProcessInteraction() && ImGui.IsMouseClicked(0))
                     {
                         onToggleGroup?.Invoke(group.Name);
                     }
                     
-                    if (mouseInRow)
+                    if (mouseInRow && CanProcessInteraction())
                     {
                         hoveredItemName = group.Name;
                         hoveredIsGroup = true;
@@ -714,12 +727,12 @@ public static class MTGraphLegend
                             mousePos.Y < Math.Min(rowBottom, contentAreaBottom) &&
                             rowTop >= contentAreaTop && rowBottom <= contentAreaBottom;
             
-            if (mouseInRow && ImGui.IsMouseClicked(0))
+            if (mouseInRow && CanProcessInteraction() && ImGui.IsMouseClicked(0))
             {
                 onToggleSeries?.Invoke(series.Name);
             }
             
-            if (mouseInRow)
+            if (mouseInRow && CanProcessInteraction())
             {
                 hoveredItemName = series.Name;
                 hoveredIsGroup = false;
@@ -918,12 +931,18 @@ public static class MTGraphLegend
     
     /// <summary>
     /// Checks if the mouse is within the legend bounds.
+    /// Also checks that no other window is on top blocking the interaction.
     /// </summary>
     /// <param name="result">The legend result from the previous draw call.</param>
-    /// <returns>True if mouse is over the legend.</returns>
+    /// <returns>True if mouse is over the legend and the window is hovered.</returns>
     public static bool IsMouseOverLegend(InsideLegendResult result)
     {
         if (!result.IsValid) return false;
+        
+        // Check if the current window is hovered (no other window on top blocking it)
+        if (!ImGui.IsWindowHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem))
+            return false;
+        
         var mousePos = ImGui.GetMousePos();
         return mousePos.X >= result.BoundsMin.X && mousePos.X <= result.BoundsMax.X &&
                mousePos.Y >= result.BoundsMin.Y && mousePos.Y <= result.BoundsMax.Y;
