@@ -313,7 +313,11 @@ public class MTComboWidget<TItem, TId>
             return _config.AllOptionLabel;
         
         if (_state.SelectedIds.Count == 0)
-            return _config.ShowAllOption ? _config.AllOptionLabel : _config.Placeholder;
+        {
+            if (_config.ShowAllOption)
+                return _config.AllOptionLabel;
+            return _config.EmptySelectionText ?? _config.Placeholder;
+        }
         
         if (_state.SelectedIds.Count == 1 && _items != null)
         {
@@ -323,7 +327,17 @@ public class MTComboWidget<TItem, TId>
                 return FormatItemName(item);
         }
         
-        return $"{_state.SelectedIds.Count} selected";
+        // Build multi-select text with item type if configured
+        var count = _state.SelectedIds.Count;
+        if (_config.MultiSelectItemTypeSingular != null)
+        {
+            var itemType = count == 1 
+                ? _config.MultiSelectItemTypeSingular 
+                : (_config.MultiSelectItemTypePlural ?? _config.MultiSelectItemTypeSingular + "s");
+            return $"{count} {itemType} selected";
+        }
+        
+        return $"{count} selected";
     }
     
     private bool DrawContent()
@@ -500,11 +514,7 @@ public class MTComboWidget<TItem, TId>
         var filterLower = _state.FilterText.ToLowerInvariant();
         var filteredItems = GetFilteredItems(filterLower);
         
-        // Apply max items limit
-        if (_config.MaxDisplayedItems > 0)
-            filteredItems = filteredItems.Take(_config.MaxDisplayedItems);
-        
-        // Draw items
+        // Draw items (no limit - use virtual scrolling)
         var itemList = filteredItems.ToList();
         
         if (_state.GroupMode == MTComboGroupDisplayMode.Grouped && _groupKeyProvider != null)
@@ -523,9 +533,36 @@ public class MTComboWidget<TItem, TId>
     {
         var changed = false;
         
-        foreach (var item in items)
+        // Use ImGuiListClipper for virtual scrolling when there are many items
+        if (items.Count > 50)
         {
-            changed |= DrawItemRow(item);
+            unsafe
+            {
+                var clipper = ImGui.ImGuiListClipper();
+                clipper.Begin(items.Count, -1f);
+                
+                while (clipper.Step())
+                {
+                    for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                    {
+                        if (i >= 0 && i < items.Count)
+                        {
+                            changed |= DrawItemRow(items[i]);
+                        }
+                    }
+                }
+                
+                clipper.End();
+                clipper.Destroy();
+            }
+        }
+        else
+        {
+            // For small lists, render directly without clipper overhead
+            foreach (var item in items)
+            {
+                changed |= DrawItemRow(item);
+            }
         }
         
         return changed;

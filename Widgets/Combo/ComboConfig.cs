@@ -159,6 +159,25 @@ public class MTComboConfig
     public string AllOptionLabel { get; init; } = "All";
     
     /// <summary>
+    /// Text to show in multi-select mode when no items are selected.
+    /// Use null to fall back to Placeholder text.
+    /// </summary>
+    public string? EmptySelectionText { get; init; } = "0 selected";
+    
+    /// <summary>
+    /// Singular item type name for multi-select text (e.g., "item", "currency").
+    /// Used to generate "X items selected" or "1 item selected" text.
+    /// If null, falls back to generic "X selected" text.
+    /// </summary>
+    public string? MultiSelectItemTypeSingular { get; init; }
+    
+    /// <summary>
+    /// Plural item type name for multi-select text (e.g., "items", "currencies").
+    /// If null, defaults to adding 's' to singular form.
+    /// </summary>
+    public string? MultiSelectItemTypePlural { get; init; }
+    
+    /// <summary>
     /// Whether to show item IDs next to names.
     /// </summary>
     public bool ShowItemIds { get; init; } = false;
@@ -204,7 +223,7 @@ public class MTComboState<TId> where TId : notnull
     /// <summary>
     /// Whether "All" is selected (multi-select mode).
     /// </summary>
-    public bool AllSelected { get; set; } = true;
+    public bool AllSelected { get; set; } = false;
     
     /// <summary>
     /// Currently selected single item ID.
