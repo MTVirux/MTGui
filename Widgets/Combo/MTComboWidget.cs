@@ -511,7 +511,7 @@ public class MTComboWidget<TItem, TId>
         }
         
         // Filter items
-        var filterLower = _state.FilterText.ToLowerInvariant();
+        var filterLower = _state.FilterText;
         var filteredItems = GetFilteredItems(filterLower);
         
         // Draw items (no limit - use virtual scrolling)
@@ -917,19 +917,19 @@ public class MTComboWidget<TItem, TId>
     
     #region Filtering and Sorting
     
-    private IEnumerable<TItem> GetFilteredItems(string filterLower)
+    private IEnumerable<TItem> GetFilteredItems(string filterText)
     {
         if (_sortedItems == null) return Enumerable.Empty<TItem>();
         
-        if (string.IsNullOrEmpty(filterLower))
+        if (string.IsNullOrEmpty(filterText))
             return _sortedItems;
         
         if (_customFilter != null)
-            return _sortedItems.Where(i => _customFilter(i, filterLower));
+            return _sortedItems.Where(i => _customFilter(i, filterText));
         
         return _sortedItems.Where(i => 
-            i.Name.ToLowerInvariant().Contains(filterLower) ||
-            i.Id.ToString()!.ToLowerInvariant().Contains(filterLower));
+            i.Name.Contains(filterText, StringComparison.OrdinalIgnoreCase) ||
+            i.Id.ToString()!.Contains(filterText, StringComparison.OrdinalIgnoreCase));
     }
     
     private void EnsureSorted()

@@ -23,6 +23,13 @@ public class MTTableWidget<TRow>
     // Sort state tracking
     private bool _sortInitialized = false;
     
+    // Cached sort results to avoid per-frame ToList() allocation
+    private List<TRow>? _cachedSortedRows;
+    private IReadOnlyList<TRow>? _lastInputRows;
+    private int _lastSortColumn = -1;
+    private bool _lastSortAscending = true;
+    private bool _sortDirty = true;
+    
     /// <summary>
     /// Gets whether this widget has bound settings.
     /// </summary>
@@ -227,8 +234,22 @@ public class MTTableWidget<TRow>
         SortKeySelector? sortKeySelector,
         IMTTableSettings settings)
     {
+        // Detect if input data reference changed
+        if (!ReferenceEquals(rows, _lastInputRows))
+        {
+            _lastInputRows = rows;
+            _sortDirty = true;
+        }
+        
         if (!settings.Sortable || sortKeySelector == null)
-            return rows.ToList();
+        {
+            if (_sortDirty || _cachedSortedRows == null)
+            {
+                _cachedSortedRows = rows.ToList();
+                _sortDirty = false;
+            }
+            return _cachedSortedRows;
+        }
         
         // Check for sort specs - update settings when user changes sort
         var sortSpecs = ImGui.TableGetSortSpecs();
@@ -243,10 +264,23 @@ public class MTTableWidget<TRow>
             }
             _sortInitialized = true;
             sortSpecs.SpecsDirty = false;
+            _sortDirty = true;
         }
         
         var sortColumnIndex = settings.SortColumnIndex;
         var sortAscending = settings.SortAscending;
+        
+        // Check if sort parameters changed
+        if (sortColumnIndex != _lastSortColumn || sortAscending != _lastSortAscending)
+        {
+            _lastSortColumn = sortColumnIndex;
+            _lastSortAscending = sortAscending;
+            _sortDirty = true;
+        }
+        
+        // Return cached result if nothing changed
+        if (!_sortDirty && _cachedSortedRows != null)
+            return _cachedSortedRows;
         
         // Sort the rows using the sort key selector
         var sorted = rows.ToList();
@@ -263,6 +297,8 @@ public class MTTableWidget<TRow>
             return sortAscending ? result : -result;
         });
         
+        _cachedSortedRows = sorted;
+        _sortDirty = false;
         return sorted;
     }
     

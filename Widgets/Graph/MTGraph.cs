@@ -1,3 +1,4 @@
+using System.Buffers;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImPlot;
 using MTGui.Common;
@@ -604,28 +605,36 @@ public class MTGraph
         // Each original point becomes 2 points (except the last one)
         // Pattern: (x0,y0), (x1,y0), (x1,y1), (x2,y1), (x2,y2), ...
         var expandedCount = count * 2 - 1;
-        var expandedX = new double[expandedCount];
-        var expandedY = new double[expandedCount];
+        var expandedX = ArrayPool<double>.Shared.Rent(expandedCount);
+        var expandedY = ArrayPool<double>.Shared.Rent(expandedCount);
         
-        for (var i = 0; i < count - 1; i++)
+        try
         {
-            var idx = i * 2;
-            expandedX[idx] = xPtr[i];
-            expandedY[idx] = yPtr[i];
-            expandedX[idx + 1] = xPtr[i + 1];
-            expandedY[idx + 1] = yPtr[i];  // Horizontal step to next X at current Y
+            for (var i = 0; i < count - 1; i++)
+            {
+                var idx = i * 2;
+                expandedX[idx] = xPtr[i];
+                expandedY[idx] = yPtr[i];
+                expandedX[idx + 1] = xPtr[i + 1];
+                expandedY[idx + 1] = yPtr[i];  // Horizontal step to next X at current Y
+            }
+            // Add final point
+            expandedX[expandedCount - 1] = xPtr[count - 1];
+            expandedY[expandedCount - 1] = yPtr[count - 1];
+            
+            var fillAlpha = data.HasMultipleSeries ? _config.Style.MultiSeriesFillAlpha : _config.Style.FillAlpha + 0.25f;
+            
+            fixed (double* expXPtr = expandedX)
+            fixed (double* expYPtr = expandedY)
+            {
+                ImPlot.SetNextFillStyle(new Vector4(series.Color.X, series.Color.Y, series.Color.Z, fillAlpha));
+                ImPlot.PlotShaded($"{series.Name}##shaded", expXPtr, expYPtr, expandedCount, 0.0);
+            }
         }
-        // Add final point
-        expandedX[expandedCount - 1] = xPtr[count - 1];
-        expandedY[expandedCount - 1] = yPtr[count - 1];
-        
-        var fillAlpha = data.HasMultipleSeries ? _config.Style.MultiSeriesFillAlpha : _config.Style.FillAlpha + 0.25f;
-        
-        fixed (double* expXPtr = expandedX)
-        fixed (double* expYPtr = expandedY)
+        finally
         {
-            ImPlot.SetNextFillStyle(new Vector4(series.Color.X, series.Color.Y, series.Color.Z, fillAlpha));
-            ImPlot.PlotShaded($"{series.Name}##shaded", expXPtr, expYPtr, expandedCount, 0.0);
+            ArrayPool<double>.Shared.Return(expandedX);
+            ArrayPool<double>.Shared.Return(expandedY);
         }
         
         ImPlot.SetNextLineStyle(colorVec4, _config.Style.LineWeight);

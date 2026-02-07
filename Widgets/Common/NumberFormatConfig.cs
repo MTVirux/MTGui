@@ -44,25 +44,25 @@ public class NumberFormatConfig
     /// <summary>
     /// Default configuration (Compact with 2 decimal places).
     /// </summary>
-    public static NumberFormatConfig Default => new();
+    public static readonly NumberFormatConfig Default = new();
     
     /// <summary>
     /// Compact configuration with 2 decimal places.
     /// </summary>
-    public static NumberFormatConfig Compact => new();
+    public static readonly NumberFormatConfig Compact = new();
     
     /// <summary>
     /// Standard configuration with thousands separators.
     /// </summary>
-    public static NumberFormatConfig Standard => new() { Style = NumberFormatStyle.Standard };
+    public static readonly NumberFormatConfig Standard = new() { Style = NumberFormatStyle.Standard };
     
     /// <summary>
     /// Compact configuration with no decimal places.
     /// </summary>
-    public static NumberFormatConfig CompactNoDecimals => new() { DecimalPlaces = 0 };
+    public static readonly NumberFormatConfig CompactNoDecimals = new() { DecimalPlaces = 0 };
     
     /// <summary>
     /// Compact configuration with 1 decimal place.
     /// </summary>
-    public static NumberFormatConfig CompactOneDecimal => new() { DecimalPlaces = 1 };
+    public static readonly NumberFormatConfig CompactOneDecimal = new() { DecimalPlaces = 1 };
 }
