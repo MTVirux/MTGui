@@ -107,6 +107,11 @@ public static class MTFlavourText
         "Reporting RMT bots",
         "Waiting for maintenance to end",
         "Waiting in Party Finder",
+        "Griefing the Party Finder", // Atrina
+        "Parsing grey", // Atrina
+        "\"Intentionally\" sandbagging",
+        "*Ascian Finger Snap*",
+        "Skipping: A long fall (Pulse)",
 
         // ── FFXIV lore ──────────────────────────────────────────────
         "Attending the Convocation",
@@ -124,15 +129,13 @@ public static class MTFlavourText
         "Brushing off Viera",
 
         // ── Pop-culture / meta ──────────────────────────────────────
-        "*Finger Snap*",
-        "Skipping: A long fall (Pulse)",
         "Exorcising Xenos",
         "Loading Jojo references",
         "Raphael take the wheel",
         "Preparing big fat tacos",
         "Brewing some coffee",
         "Smoking a cigarette",
-        "90002: Connection lost",
+        "90002: Connection to server was lost", // Glarator
 
         // ── Finance / accounting parody ─────────────────────────────
         "Auditing retainer profits",
