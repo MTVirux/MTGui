@@ -159,7 +159,7 @@ public class MTTableColumn
 /// <summary>
 /// Context passed to cell rendering delegates.
 /// </summary>
-public class MTCellRenderContext
+public struct MTCellRenderContext
 {
     /// <summary>
     /// The row index (0-based, after sorting).
@@ -174,7 +174,7 @@ public class MTCellRenderContext
     /// <summary>
     /// Whether this is an even row (for alternating colors).
     /// </summary>
-    public bool IsEvenRow => RowIndex % 2 == 0;
+    public readonly bool IsEvenRow => RowIndex % 2 == 0;
     
     /// <summary>
     /// The table settings.

@@ -12,6 +12,11 @@ namespace MTGui.Table;
 /// <typeparam name="TRow">The type of data for each row.</typeparam>
 public class MTTableWidget<TRow>
 {
+    /// <summary>
+    /// Shared default settings instance to avoid allocating per frame when no settings are bound.
+    /// </summary>
+    private static readonly MTTableSettings DefaultSettings = new();
+    
     private readonly string _tableId;
     private readonly string _noDataText;
     
@@ -100,7 +105,7 @@ public class MTTableWidget<TRow>
         IMTTableSettings? settings = null,
         float height = 0f)
     {
-        settings ??= _boundSettings ?? new MTTableSettings();
+        settings ??= _boundSettings ?? DefaultSettings;
         
         if (columns.Count == 0)
         {
