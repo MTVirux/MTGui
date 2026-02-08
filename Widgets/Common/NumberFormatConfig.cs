@@ -8,18 +8,18 @@ public class NumberFormatConfig
     /// <summary>
     /// The formatting style to use.
     /// </summary>
-    public NumberFormatStyle Style { get; set; } = NumberFormatStyle.Compact;
+    public virtual NumberFormatStyle Style { get; set; } = NumberFormatStyle.Compact;
     
     /// <summary>
     /// Number of decimal places to display (0-2).
     /// Primarily used for Compact style, but may apply to other styles.
     /// </summary>
-    public int DecimalPlaces { get; set; } = 2;
+    public virtual int DecimalPlaces { get; set; } = 2;
     
     /// <summary>
     /// Whether to use thousands separators in Standard mode.
     /// </summary>
-    public bool UseThousandsSeparator { get; set; } = true;
+    public virtual bool UseThousandsSeparator { get; set; } = true;
     
     /// <summary>
     /// Creates a deep copy of this configuration.
@@ -42,27 +42,56 @@ public class NumberFormatConfig
     }
     
     /// <summary>
-    /// Default configuration (Compact with 2 decimal places).
+    /// Default configuration (Compact with 2 decimal places). Immutable — do not cast to mutate.
     /// </summary>
-    public static readonly NumberFormatConfig Default = new();
+    public static readonly NumberFormatConfig Default = new FrozenNumberFormatConfig();
     
     /// <summary>
-    /// Compact configuration with 2 decimal places.
+    /// Compact configuration with 2 decimal places. Immutable — do not cast to mutate.
     /// </summary>
-    public static readonly NumberFormatConfig Compact = new();
+    public static readonly NumberFormatConfig Compact = new FrozenNumberFormatConfig();
     
     /// <summary>
-    /// Standard configuration with thousands separators.
+    /// Standard configuration with thousands separators. Immutable — do not cast to mutate.
     /// </summary>
-    public static readonly NumberFormatConfig Standard = new() { Style = NumberFormatStyle.Standard };
+    public static readonly NumberFormatConfig Standard = new FrozenNumberFormatConfig { _style = NumberFormatStyle.Standard };
     
     /// <summary>
-    /// Compact configuration with no decimal places.
+    /// Compact configuration with no decimal places. Immutable — do not cast to mutate.
     /// </summary>
-    public static readonly NumberFormatConfig CompactNoDecimals = new() { DecimalPlaces = 0 };
+    public static readonly NumberFormatConfig CompactNoDecimals = new FrozenNumberFormatConfig { _decimalPlaces = 0 };
     
     /// <summary>
-    /// Compact configuration with 1 decimal place.
+    /// Compact configuration with 1 decimal place. Immutable — do not cast to mutate.
     /// </summary>
-    public static readonly NumberFormatConfig CompactOneDecimal = new() { DecimalPlaces = 1 };
+    public static readonly NumberFormatConfig CompactOneDecimal = new FrozenNumberFormatConfig { _decimalPlaces = 1 };
+}
+
+/// <summary>
+/// An immutable NumberFormatConfig that throws on attempted mutation.
+/// Used for shared static instances to prevent accidental corruption.
+/// </summary>
+file sealed class FrozenNumberFormatConfig : NumberFormatConfig
+{
+    internal NumberFormatStyle _style = NumberFormatStyle.Compact;
+    internal int _decimalPlaces = 2;
+    internal bool _useThousandsSeparator = true;
+    
+    public override NumberFormatStyle Style
+    {
+        get => _style;
+        set => throw new InvalidOperationException("Cannot mutate a shared static NumberFormatConfig instance. Use Clone() to create a mutable copy.");
+    }
+    
+    public override int DecimalPlaces
+    {
+        get => _decimalPlaces;
+        set => throw new InvalidOperationException("Cannot mutate a shared static NumberFormatConfig instance. Use Clone() to create a mutable copy.");
+    }
+    
+    public override bool UseThousandsSeparator
+    {
+        get => _useThousandsSeparator;
+        set => throw new InvalidOperationException("Cannot mutate a shared static NumberFormatConfig instance. Use Clone() to create a mutable copy.");
+    }
 }
