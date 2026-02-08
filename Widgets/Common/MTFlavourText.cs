@@ -1,4 +1,4 @@
-namespace MTGui.Widgets.Common;
+namespace MTGui.Common;
 
 /// <summary>
 /// A shared pool of flavour-text messages for loading screens,
