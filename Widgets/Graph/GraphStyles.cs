@@ -107,9 +107,9 @@ public class MTGraphColorConfig
     #region Static Default Instance
     
     /// <summary>
-    /// Gets a new instance with default color values.
+    /// Default color configuration instance. Shared; do not mutate.
     /// </summary>
-    public static MTGraphColorConfig Default => new();
+    public static readonly MTGraphColorConfig Default = new();
     
     #endregion
     
@@ -480,7 +480,7 @@ public class MTGraphStyleConfig
     #endregion
     
     /// <summary>
-    /// Creates a default style configuration.
+    /// Default style configuration instance. Shared; do not mutate.
     /// </summary>
-    public static MTGraphStyleConfig Default => new();
+    public static readonly MTGraphStyleConfig Default = new();
 }

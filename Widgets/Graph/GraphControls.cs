@@ -86,7 +86,7 @@ public static class MTGraphControls
             SettingsChanged = settingsChanged;
         }
         
-        public static ControlsDrawerResult Invalid => new(Vector2.Zero, Vector2.Zero, false, false, 1, MTTimeUnit.Hours, 75f, false);
+        public static readonly ControlsDrawerResult Invalid = new(Vector2.Zero, Vector2.Zero, false, false, 1, MTTimeUnit.Hours, 75f, false);
     }
     
     #endregion
