@@ -270,9 +270,16 @@ public sealed class MTDatePickerWidget
                     var currentDate = new DateTime(_displayedMonth.Year, _displayedMonth.Month, day);
                     var isSelected = currentDate == _selectedDate;
                     var isToday = currentDate == today;
+                    var isDisabled = (MinDate.HasValue && currentDate < MinDate.Value.Date) ||
+                                    (MaxDate.HasValue && currentDate > MaxDate.Value.Date);
 
                     // Style the button
-                    if (isSelected)
+                    if (isDisabled)
+                    {
+                        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 0.5f));
+                        ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.2f, 0.2f, 0.2f, 0.2f));
+                    }
+                    else if (isSelected)
                     {
                         // Highlight selected date with a distinct color
                         ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.26f, 0.59f, 0.98f, 0.80f)); // Blue
@@ -283,14 +290,24 @@ public sealed class MTDatePickerWidget
                         ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.26f, 0.59f, 0.98f, 0.40f));
                     }
 
-                    if (ImGui.Button($"{day}##{_id}_{day}", cellSize))
+                    if (isDisabled)
+                    {
+                        ImGui.BeginDisabled();
+                    }
+                    
+                    if (ImGui.Button($"{day}##{_id}_{day}", cellSize) && !isDisabled)
                     {
                         _selectedDate = currentDate;
                         changed = true;
                         DateTimeChanged?.Invoke(SelectedDateTime);
                     }
-
-                    if (isSelected || isToday)
+                    
+                    if (isDisabled)
+                    {
+                        ImGui.EndDisabled();
+                        ImGui.PopStyleColor(2);
+                    }
+                    else if (isSelected || isToday)
                     {
                         ImGui.PopStyleColor();
                     }
