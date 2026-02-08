@@ -56,8 +56,10 @@ public static class MTTableHelpers
         
         float offsetY = vAlign switch
         {
-            MTTableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
-            MTTableVerticalAlignment.Bottom => style.CellPadding.Y,
+            // Note: true vertical centering requires known row height, which ImGui tables
+            // don't provide until after layout. This uses content region as best estimate.
+            MTTableVerticalAlignment.Center => Math.Max(0f, (cellSize.Y - textSize.Y) * 0.5f),
+            MTTableVerticalAlignment.Bottom => Math.Max(0f, cellSize.Y - textSize.Y),
             _ => 0f
         };
         
@@ -106,7 +108,7 @@ public static class MTTableHelpers
         
         float offsetY = vAlign switch
         {
-            MTTableVerticalAlignment.Center => (style.CellPadding.Y * 2 + textSize.Y - textSize.Y) * 0.5f - style.CellPadding.Y,
+            MTTableVerticalAlignment.Center => 0f, // Header cells are single-height; vertical centering is implicit
             MTTableVerticalAlignment.Bottom => style.CellPadding.Y,
             _ => 0f
         };
