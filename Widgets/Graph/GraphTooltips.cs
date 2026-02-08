@@ -22,13 +22,15 @@ public static class MTGraphTooltips
         
         var drawList = ImPlot.GetPlotDrawList();
         
-        // Calculate box size
+        // Calculate box size — cache text sizes to avoid calling CalcTextSize twice per line
         var maxWidth = 0f;
         var totalHeight = 0f;
-        foreach (var line in lines)
+        Span<float> lineHeights = lines.Length <= 16 ? stackalloc float[lines.Length] : new float[lines.Length];
+        for (var i = 0; i < lines.Length; i++)
         {
-            var size = ImGui.CalcTextSize(line);
+            var size = ImGui.CalcTextSize(lines[i]);
             maxWidth = Math.Max(maxWidth, size.X);
+            lineHeights[i] = size.Y;
             totalHeight += size.Y + 2f;
         }
         
@@ -59,25 +61,13 @@ public static class MTGraphTooltips
         
         // Text
         var textY = boxPos.Y + padding;
-        foreach (var line in lines)
+        for (var i = 0; i < lines.Length; i++)
         {
             drawList.AddText(
                 new Vector2(boxPos.X + padding + style.TooltipAccentWidth + 1, textY), 
                 ImGui.GetColorU32(colors.TextPrimary), 
-                line);
-            textY += ImGui.CalcTextSize(line).Y + 2f;
+                lines[i]);
+            textY += lineHeights[i] + 2f;
         }
-    }
-    
-    /// <summary>
-    /// Draws a simple single-line tooltip.
-    /// </summary>
-    /// <param name="screenPos">Screen position for the tooltip.</param>
-    /// <param name="text">Text to display.</param>
-    /// <param name="accentColor">Color for the accent bar.</param>
-    /// <param name="style">Optional style configuration.</param>
-    public static void DrawTooltip(Vector2 screenPos, string text, Vector4 accentColor, MTGraphStyleConfig? style = null)
-    {
-        DrawTooltipBox(screenPos, new[] { text }, accentColor, style);
     }
 }
