@@ -24,7 +24,7 @@ public static class MTTableHelpers
     /// <returns>Combined ImGuiTableFlags.</returns>
     public static ImGuiTableFlags GetStandardTableFlags(bool sortable = false, bool scrollable = true)
     {
-        var flags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable;
+        var flags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingFixedFit;
         if (scrollable) flags |= ImGuiTableFlags.ScrollY;
         if (sortable) flags |= ImGuiTableFlags.Sortable;
         return flags;
@@ -87,11 +87,13 @@ public static class MTTableHelpers
     /// <param name="vAlign">Vertical alignment.</param>
     /// <param name="sortable">Whether the header should support sorting.</param>
     /// <param name="color">Optional text color.</param>
+    /// <param name="rightClicked">True if the header was right-clicked this frame (covers the full interaction area including resize grips).</param>
     public static void DrawAlignedHeaderCell(
         string label,
         MTTableHorizontalAlignment hAlign,
         MTTableVerticalAlignment vAlign,
-        bool sortable = false,
+        bool sortable,
+        out bool rightClicked,
         Vector4? color = null)
     {
         var textSize = ImGui.CalcTextSize(label);
@@ -115,23 +117,17 @@ public static class MTTableHelpers
         
         // Store original cursor position for text rendering
         var startCursorPos = ImGui.GetCursorPos();
-        var startScreenPos = ImGui.GetCursorScreenPos();
         
-        // Render TableHeader with actual label for proper sort click handling and arrow rendering
+        // Render TableHeader with empty label for sort arrow and click handling
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        ImGui.TableHeader(label);
+        ImGui.TableHeader(string.Empty);
         ImGui.PopStyleVar();
         
-        // Cover the default left-aligned label text with the header background color,
-        // then redraw aligned text on top. The sort arrow is at the right edge and unaffected.
-        var drawList = ImGui.GetWindowDrawList();
-        var headerBgColor = ImGui.GetColorU32(ImGuiCol.TableHeaderBg);
-        drawList.AddRectFilled(
-            startScreenPos,
-            new Vector2(startScreenPos.X + textSize.X, startScreenPos.Y + textSize.Y),
-            headerBgColor);
+        // Check right-click immediately after TableHeader while it's still the "last item".
+        // This covers the full header interaction area including resize grips.
+        rightClicked = ImGui.IsItemClicked(ImGuiMouseButton.Right);
         
-        // Go back and render aligned text
+        // Go back and render aligned text on top
         ImGui.SameLine();
         var afterHeaderCursor = ImGui.GetCursorPos();
         ImGui.SetCursorPos(new Vector2(

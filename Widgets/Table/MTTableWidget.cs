@@ -119,7 +119,7 @@ public class MTTableWidget<TRow>
             return;
         }
         
-        var flags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY;
+        var flags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit;
         if (settings.Sortable) flags |= ImGuiTableFlags.Sortable;
         
         var tableHeight = height > 0 ? height : ImGui.GetContentRegionAvail().Y;
