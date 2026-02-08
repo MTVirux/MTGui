@@ -10,6 +10,26 @@ namespace MTGui.Graph;
 /// </summary>
 public static class MTGraphLegend
 {
+    // Reusable sort buffer to avoid per-frame allocations
+    [ThreadStatic] private static List<MTGraphSeriesData>? _sortBuffer;
+    
+    private static int CompareByLastValueDescending(MTGraphSeriesData a, MTGraphSeriesData b)
+    {
+        var va = a.PointCount > 0 ? a.YValues[a.PointCount - 1] : 0.0;
+        var vb = b.PointCount > 0 ? b.YValues[b.PointCount - 1] : 0.0;
+        return vb.CompareTo(va); // descending
+    }
+    
+    private static List<MTGraphSeriesData> GetSortedSeries(IReadOnlyList<MTGraphSeriesData> series)
+    {
+        _sortBuffer ??= new List<MTGraphSeriesData>();
+        _sortBuffer.Clear();
+        for (var i = 0; i < series.Count; i++)
+            _sortBuffer.Add(series[i]);
+        _sortBuffer.Sort(CompareByLastValueDescending);
+        return _sortBuffer;
+    }
+    
     #region Helper Methods
     
     /// <summary>
@@ -208,7 +228,7 @@ public static class MTGraphLegend
             }
             
             // Sort series by last value descending
-            var sortedSeries = series.OrderByDescending(s => s.PointCount > 0 ? s.YValues[s.PointCount - 1] : 0).ToList();
+            var sortedSeries = GetSortedSeries(series);
             
             foreach (var seriesItem in sortedSeries)
             {
@@ -321,7 +341,7 @@ public static class MTGraphLegend
             CollapseToggled = collapseToggled;
         }
         
-        public static InsideLegendResult Invalid => new(Vector2.Zero, Vector2.Zero, 0f, false);
+        public static readonly InsideLegendResult Invalid = new(Vector2.Zero, Vector2.Zero, 0f, false);
     }
     
     /// <summary>
@@ -702,7 +722,7 @@ public static class MTGraphLegend
         }
         
         // Sort series by value descending
-        var sortedSeries = data.Series.OrderByDescending(s => s.PointCount > 0 ? s.YValues[s.PointCount - 1] : 0).ToList();
+        var sortedSeries = GetSortedSeries(data.Series);
         
         // Draw each series entry
         foreach (var series in sortedSeries)
@@ -902,31 +922,6 @@ public static class MTGraphLegend
             thumbColor, 3f);
         
         return scrollOffset;
-    }
-    
-    /// <summary>
-    /// Shows tooltip for the hovered legend entry.
-    /// </summary>
-    private static void ShowLegendTooltip(
-        IReadOnlyList<MTGraphSeriesData> sortedSeries,
-        HashSet<string> hiddenSeries,
-        Vector2 mousePos,
-        float contentAreaTop,
-        float scrollOffset,
-        float rowHeight,
-        bool needsScrolling)
-    {
-        var relativeY = mousePos.Y - contentAreaTop + scrollOffset;
-        var hoveredIdx = (int)(relativeY / rowHeight);
-        if (hoveredIdx >= 0 && hoveredIdx < sortedSeries.Count)
-        {
-            var series = sortedSeries[hoveredIdx];
-            var isHidden = hiddenSeries.Contains(series.Name);
-            var lastValue = series.PointCount > 0 ? (float)series.YValues[series.PointCount - 1] : 0f;
-            var statusText = isHidden ? " (hidden)" : "";
-            var scrollHint = needsScrolling ? "\nScroll to see more" : "";
-            ImGui.SetTooltip($"{series.Name}: {MTNumberFormatter.FormatCompact(lastValue)}{statusText}\nClick to toggle visibility{scrollHint}");
-        }
     }
     
     /// <summary>
