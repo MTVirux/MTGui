@@ -70,4 +70,16 @@ public static class MTGraphTooltips
             textY += lineHeights[i] + 2f;
         }
     }
+    
+    /// <summary>
+    /// Draws a simple single-line tooltip.
+    /// </summary>
+    /// <param name="screenPos">Screen position for the tooltip.</param>
+    /// <param name="text">Text to display.</param>
+    /// <param name="accentColor">Color for the accent bar.</param>
+    /// <param name="style">Optional style configuration.</param>
+    public static void DrawTooltip(Vector2 screenPos, string text, Vector4 accentColor, MTGraphStyleConfig? style = null)
+    {
+        DrawTooltipBox(screenPos, new[] { text }, accentColor, style);
+    }
 }
