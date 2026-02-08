@@ -20,6 +20,7 @@ public static class MTGraphDrawing
     /// </summary>
     /// <remarks>
     /// The userData pointer should contain the start time ticks (long cast to void*).
+    /// Uses stackalloc + TryFormat to avoid per-tick string allocations.
     /// </remarks>
     public static readonly unsafe ImPlotFormatter XAxisTimeFormatter = (double value, byte* buff, int size, void* userData) =>
     {
@@ -34,14 +35,22 @@ public static class MTGraphDrawing
         var visibleMaxTime = startTime.AddSeconds(plotLimits.X.Max).ToLocalTime();
         var isSameDay = visibleMinTime.Date == visibleMaxTime.Date;
         
-        // If all visible labels are on the same day, show only time; otherwise show date+time
-        var format = isSameDay ? "HH:mm" : "M/d HH:mm";
-        var formatted = time.ToString(format);
-        var len = Math.Min(formatted.Length, size - 1);
-        for (var i = 0; i < len; i++)
-            buff[i] = (byte)formatted[i];
-        buff[len] = 0;
-        return len;
+        // Use TryFormat with stackalloc to avoid string allocation
+        ReadOnlySpan<char> format = isSameDay ? "HH:mm" : "M/d HH:mm";
+        Span<char> charBuf = stackalloc char[32];
+        if (time.TryFormat(charBuf, out var charsWritten, format))
+        {
+            var len = Math.Min(charsWritten, size - 1);
+            for (var i = 0; i < len; i++)
+                buff[i] = (byte)charBuf[i];
+            buff[len] = 0;
+            return len;
+        }
+        
+        // Fallback if TryFormat fails
+        buff[0] = (byte)'?';
+        buff[1] = 0;
+        return 1;
     };
     
     /// <summary>
