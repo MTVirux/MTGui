@@ -13,11 +13,15 @@ namespace MTGui.Graph;
 /// This is the main graph component that orchestrates all the rendering utilities
 /// from GraphDrawing, GraphLegend, and MTGraphControls.
 /// </remarks>
-public class MTGraph
+public class MTGraph : IDisposable
 {
     #region Fields
     
     private readonly MTGraphConfig _config;
+    
+    // Cached plot ID strings to avoid per-frame string interpolation
+    private readonly string _plotIdSingle;
+    private readonly string _plotIdMulti;
     
     /// <summary>
     /// Set of series names that are currently hidden.
@@ -58,9 +62,14 @@ public class MTGraph
     private MTPreparedGraphData? _cachedPreparedData;
     private IReadOnlyList<(string name, IReadOnlyList<(DateTime ts, float value)> samples)>? _lastSeriesData;
     private IReadOnlyList<(string name, IReadOnlyList<(DateTime ts, float value)> samples, Vector4? color)>? _lastSeriesDataWithColors;
+    private int _lastSeriesDataCount;
+    private int _lastSeriesDataWithColorsCount;
     private int _lastHiddenSeriesHash;
     private bool _lastAutoScrollEnabled;
     private DateTime _lastPreparedDataTime;
+    
+    // === Disposed flag ===
+    private bool _disposed;
     
     // === Groups ===
     private IReadOnlyList<MTGraphSeriesGroup>? _groups;
@@ -129,6 +138,8 @@ public class MTGraph
     public MTGraph(MTGraphConfig config)
     {
         _config = config ?? new MTGraphConfig();
+        _plotIdSingle = $"##{_config.PlotId}";
+        _plotIdMulti = $"##{_config.PlotId}_multi";
     }
     
     #endregion
@@ -171,6 +182,7 @@ public class MTGraph
             data = PrepareTimeBasedData(series);
             _cachedPreparedData = data;
             _lastSeriesData = series;
+            _lastSeriesDataCount = series.Count;
             _lastHiddenSeriesHash = ComputeHiddenSeriesHash();
             _lastAutoScrollEnabled = _config.AutoScrollEnabled;
             _lastPreparedDataTime = DateTime.UtcNow;
@@ -210,6 +222,7 @@ public class MTGraph
             data = PrepareTimeBasedDataWithColors(series);
             _cachedPreparedData = data;
             _lastSeriesDataWithColors = series;
+            _lastSeriesDataWithColorsCount = series.Count;
             _lastSeriesData = null;
             _lastHiddenSeriesHash = ComputeHiddenSeriesHash();
             _lastAutoScrollEnabled = _config.AutoScrollEnabled;
@@ -378,7 +391,7 @@ public class MTGraph
             var plotCondition = _config.AutoScrollEnabled ? ImPlotCond.Always : ImPlotCond.Once;
             ImPlot.SetNextAxesLimits(data.XMin, data.XMax, data.YMin, data.YMax, plotCondition);
 
-            var plotId = data.HasMultipleSeries ? $"##{_config.PlotId}_multi" : $"##{_config.PlotId}";
+            var plotId = data.HasMultipleSeries ? _plotIdMulti : _plotIdSingle;
             
             if (ImPlot.BeginPlot(plotId, plotSize, plotFlags))
             {
@@ -567,7 +580,7 @@ public class MTGraph
                     
                 case MTGraphType.Bars:
                     var barWidth = data.HasMultipleSeries 
-                        ? data.TotalTimeSpan / count * 0.8 / data.Series.Count(s => s.Visible)
+                        ? data.TotalTimeSpan / count * 0.8 / data.VisibleSeriesCount
                         : 0.67;
                     ImPlot.SetNextFillStyle(colorVec4);
                     ImPlot.PlotBars(series.Name, xPtr, yPtr, count, barWidth);
@@ -896,6 +909,9 @@ public class MTGraph
             StartTime = DateTime.MinValue,
             TotalTimeSpan = xDataMax
         };
+        // Note: single-series index-based data always has 1 visible series.
+        // UpdateVisibleSeriesCount is called after return by the caller's Render path
+        // which uses DrawGraph (the only consumer of HasMultipleSeries).
     }
     
     /// <summary>
@@ -941,7 +957,7 @@ public class MTGraph
         var (xMin, xMax) = CalculateXLimits(totalTimeSpan);
         var (yMin, yMax) = CalculateYBounds(series, xMin, xMax);
         
-        return new MTPreparedGraphData
+        var result = new MTPreparedGraphData
         {
             Series = series,
             Groups = _groups,
@@ -953,6 +969,8 @@ public class MTGraph
             StartTime = globalMinTime,
             TotalTimeSpan = totalTimeSpan
         };
+        result.UpdateVisibleSeriesCount();
+        return result;
     }
     
     /// <summary>
@@ -1013,21 +1031,23 @@ public class MTGraph
             });
         }
         
-        var (xMin, xMax) = CalculateXLimits(totalTimeSpan);
-        var (yMin, yMax) = CalculateYBounds(series, xMin, xMax);
+        var (xMinC, xMaxC) = CalculateXLimits(totalTimeSpan);
+        var (yMinC, yMaxC) = CalculateYBounds(series, xMinC, xMaxC);
         
-        return new MTPreparedGraphData
+        var resultC = new MTPreparedGraphData
         {
             Series = series,
             Groups = _groups,
-            XMin = xMin,
-            XMax = xMax,
-            YMin = yMin,
-            YMax = yMax,
+            XMin = xMinC,
+            XMax = xMaxC,
+            YMin = yMinC,
+            YMax = yMaxC,
             IsTimeBased = true,
             StartTime = globalMinTime,
             TotalTimeSpan = totalTimeSpan
         };
+        resultC.UpdateVisibleSeriesCount();
+        return resultC;
     }
     
     #endregion
@@ -1176,7 +1196,7 @@ private void UpdateRealTimeLimits(MTPreparedGraphData data)
         data.XMin = xMin;
         data.XMax = xMax;
         
-        var (yMin, yMax) = CalculateYBounds(data.Series.ToList(), xMin, xMax);
+        var (yMin, yMax) = CalculateYBounds(data.Series, xMin, xMax);
         data.YMin = yMin;
         data.YMax = yMax;
     }
@@ -1188,6 +1208,10 @@ private void UpdateRealTimeLimits(MTPreparedGraphData data)
             return true;
         
         if (!ReferenceEquals(series, _lastSeriesData))
+            return true;
+        
+        // Secondary check: detect in-place mutations via count change
+        if (series.Count != _lastSeriesDataCount)
             return true;
         
         var currentHiddenHash = ComputeHiddenSeriesHash();
@@ -1209,6 +1233,10 @@ private void UpdateRealTimeLimits(MTPreparedGraphData data)
         if (!ReferenceEquals(series, _lastSeriesDataWithColors))
             return true;
         
+        // Secondary check: detect in-place mutations via count change
+        if (series.Count != _lastSeriesDataWithColorsCount)
+            return true;
+        
         var currentHiddenHash = ComputeHiddenSeriesHash();
         if (currentHiddenHash != _lastHiddenSeriesHash)
             return true;
@@ -1221,10 +1249,17 @@ private void UpdateRealTimeLimits(MTPreparedGraphData data)
     
     private int ComputeHiddenSeriesHash()
     {
+        // Use XOR for order-independent hashing — HashSet iteration order is non-deterministic
         var hash = _hiddenSeries.Count;
         foreach (var name in _hiddenSeries)
         {
-            hash = HashCode.Combine(hash, name);
+            hash ^= name.GetHashCode();
+        }
+        // Also include hidden groups
+        hash ^= _hiddenGroups.Count << 16;
+        foreach (var name in _hiddenGroups)
+        {
+            hash ^= name.GetHashCode();
         }
         return hash;
     }
@@ -1265,6 +1300,25 @@ private void UpdateRealTimeLimits(MTPreparedGraphData data)
         }
         
         return left;
+    }
+    
+    #endregion
+    
+    #region IDisposable
+    
+    /// <summary>
+    /// Releases pooled arrays and clears cached data.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        _pooledXArrays.Clear();
+        _pooledYArrays.Clear();
+        _cachedPreparedData = null;
+        _lastSeriesData = null;
+        _lastSeriesDataWithColors = null;
     }
     
     #endregion

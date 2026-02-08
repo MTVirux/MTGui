@@ -97,15 +97,38 @@ public sealed class MTPreparedGraphData
     public double TotalTimeSpan { get; set; }
     
     /// <summary>
+    /// Cached count of visible series. Updated by <see cref="UpdateVisibleSeriesCount"/>.
+    /// </summary>
+    private int _visibleSeriesCount;
+    
+    /// <summary>
     /// Whether this graph has multiple visible series (affects rendering decisions like bar width).
     /// </summary>
-    public bool HasMultipleSeries => Series.Count(s => s.Visible) > 1;
+    public bool HasMultipleSeries => _visibleSeriesCount > 1;
+    
+    /// <summary>
+    /// Gets the number of currently visible series.
+    /// </summary>
+    public int VisibleSeriesCount => _visibleSeriesCount;
     
     /// <summary>
     /// Whether this graph has multiple series total (including hidden), affects legend display.
     /// This ensures the legend remains visible when series are hidden, allowing users to re-enable them.
     /// </summary>
     public bool HasMultipleSeriesTotal => Series.Count > 1;
+    
+    /// <summary>
+    /// Recomputes the cached visible series count. Call this after creating or modifying series visibility.
+    /// </summary>
+    public void UpdateVisibleSeriesCount()
+    {
+        var count = 0;
+        foreach (var s in Series)
+        {
+            if (s.Visible) count++;
+        }
+        _visibleSeriesCount = count;
+    }
     
     /// <summary>
     /// Whether this graph has any groups defined.
