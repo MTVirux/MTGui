@@ -113,11 +113,21 @@ public static class MTTableHelpers
         
         // Store original cursor position for text rendering
         var startCursorPos = ImGui.GetCursorPos();
+        var startScreenPos = ImGui.GetCursorScreenPos();
         
-        // Render empty TableHeader to get sort arrow and click handling
+        // Render TableHeader with actual label for proper sort click handling and arrow rendering
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        ImGui.TableHeader(string.Empty);
+        ImGui.TableHeader(label);
         ImGui.PopStyleVar();
+        
+        // Cover the default left-aligned label text with the header background color,
+        // then redraw aligned text on top. The sort arrow is at the right edge and unaffected.
+        var drawList = ImGui.GetWindowDrawList();
+        var headerBgColor = ImGui.GetColorU32(ImGuiCol.TableHeaderBg);
+        drawList.AddRectFilled(
+            startScreenPos,
+            new Vector2(startScreenPos.X + textSize.X, startScreenPos.Y + textSize.Y),
+            headerBgColor);
         
         // Go back and render aligned text
         ImGui.SameLine();
