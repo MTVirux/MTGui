@@ -113,7 +113,18 @@ public static class MTGraphValueLabels
         var visibleCount = Math.Min(seriesData.Count, style.ValueLabelMaxVisible);
         
         // Sort by value for display priority (highest values get priority)
-        var sortedByValue = seriesData.OrderByDescending(s => s.LastY).Take(visibleCount).ToList();
+        // Build a reusable list and sort in-place to avoid LINQ allocations
+        var sortedByValue = new List<(string Name, double LastX, double LastY, Vector3 Color)>(visibleCount);
+        {
+            // Copy all to a temp list, sort, then take top N
+            var all = new List<(string Name, double LastX, double LastY, Vector3 Color)>(seriesData.Count);
+            for (var i = 0; i < seriesData.Count; i++)
+                all.Add(seriesData[i]);
+            all.Sort((a, b) => b.LastY.CompareTo(a.LastY)); // descending
+            var count = Math.Min(visibleCount, all.Count);
+            for (var i = 0; i < count; i++)
+                sortedByValue.Add(all[i]);
+        }
         
         // Build positioned labels with pixel coordinates
         var labels = new List<PositionedLabel>();
@@ -151,7 +162,12 @@ public static class MTGraphValueLabels
         
         // Calculate label dimensions
         var labelHeight = labels[0].LabelSize.Y + padding * 2;
-        var maxLabelWidth = labels.Max(l => l.LabelSize.X) + padding * 2;
+        var maxLabelWidth = 0f;
+        foreach (var l in labels)
+        {
+            var w = l.LabelSize.X + padding * 2;
+            if (w > maxLabelWidth) maxLabelWidth = w;
+        }
         
         // Assign X positions using horizontal staggering for overlapping labels
         // Labels are placed top-to-bottom in value order (highest at top)
@@ -162,7 +178,8 @@ public static class MTGraphValueLabels
             style.ValueLabelStepsPerRow);
         
         // Sort by value ascending so higher values are drawn last (on top)
-        var sortedForDrawing = labelPositions.OrderBy(lp => lp.Label.Value).ToList();
+        labelPositions.Sort((a, b) => a.Label.Value.CompareTo(b.Label.Value));
+        var sortedForDrawing = labelPositions;
         
         // Collect bounds for hover detection
         var labelBounds = new List<ValueLabelBounds>();
@@ -350,62 +367,6 @@ public static class MTGraphValueLabels
         }
         
         return result;
-    }
-    
-    /// <summary>
-    /// Resolves overlapping labels by adjusting their Y positions.
-    /// Uses an iterative approach to push overlapping labels apart.
-    /// </summary>
-    private static List<PositionedLabel> ResolveOverlaps(
-        List<PositionedLabel> labels,
-        float padding,
-        float minSpacing,
-        float minY,
-        float maxY)
-    {
-        if (labels.Count <= 1)
-            return labels;
-        
-        // Calculate label heights including spacing
-        var labelHeights = labels.Select(l => l.LabelSize.Y + padding * 2 + minSpacing).ToArray();
-        var positions = labels.Select(l => l.LabelY).ToArray();
-        
-        // Iteratively resolve overlaps
-        const int maxIterations = 20;
-        for (var iter = 0; iter < maxIterations; iter++)
-        {
-            var hasOverlap = false;
-            
-            for (var i = 0; i < positions.Length - 1; i++)
-            {
-                var currentBottom = positions[i] + labelHeights[i] / 2;
-                var nextTop = positions[i + 1] - labelHeights[i + 1] / 2;
-                
-                if (currentBottom > nextTop)
-                {
-                    hasOverlap = true;
-                    var overlap = currentBottom - nextTop;
-                    var adjustment = overlap / 2 + minSpacing / 2;
-                    
-                    // Push both labels apart equally
-                    positions[i] -= adjustment;
-                    positions[i + 1] += adjustment;
-                }
-            }
-            
-            // Clamp to plot bounds
-            for (var i = 0; i < positions.Length; i++)
-            {
-                var halfHeight = labelHeights[i] / 2;
-                positions[i] = Math.Max(minY + halfHeight, Math.Min(positions[i], maxY - halfHeight));
-            }
-            
-            if (!hasOverlap)
-                break;
-        }
-        
-        // Apply adjusted positions
-        return labels.Select((l, i) => l.WithLabelY(positions[i])).ToList();
     }
     
     /// <summary>
