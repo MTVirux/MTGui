@@ -25,3 +25,18 @@ public enum MTTableVerticalAlignment
     /// <summary>Align content to the bottom of the cell.</summary>
     Bottom
 }
+
+/// <summary>
+/// Column resize actions available from the header right-click context menu.
+/// </summary>
+public enum MTColumnResizeAction
+{
+    /// <summary>No resize action pending.</summary>
+    None,
+    /// <summary>Resize column(s) to fit header text width.</summary>
+    HeaderWidth,
+    /// <summary>Resize column(s) to fit data content width.</summary>
+    DataWidth,
+    /// <summary>Resize column(s) to fill remaining table space equally.</summary>
+    FillSpace
+}

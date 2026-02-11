@@ -72,6 +72,12 @@ public interface IMTTableSettings
     /// Number format configuration for numeric values in the table.
     /// </summary>
     NumberFormatConfig NumberFormat { get; set; }
+    
+    /// <summary>
+    /// List of merged column groups. Each group combines multiple columns into a single display column.
+    /// When columns are merged, they appear as one column and callers can aggregate values across them.
+    /// </summary>
+    List<MTMergedColumnGroupBase> MergedColumnGroups { get; set; }
 }
 
 /// <summary>
@@ -117,6 +123,9 @@ public class MTTableSettings : IMTTableSettings
     
     /// <inheritdoc/>
     public NumberFormatConfig NumberFormat { get; set; } = new();
+    
+    /// <inheritdoc/>
+    public List<MTMergedColumnGroupBase> MergedColumnGroups { get; set; } = new();
 }
 
 /// <summary>
@@ -132,7 +141,7 @@ public class MTTableColumn
     /// <summary>
     /// Column width. If 0, uses auto-width (stretch).
     /// </summary>
-    public float Width { get; init; } = 0f;
+    public float Width { get; set; } = 0f;
     
     /// <summary>
     /// Whether this column should stretch to fill available space.

@@ -267,6 +267,55 @@ public static class MTTableHelpers
     }
     
     /// <summary>
+    /// Estimates the total pixel overhead consumed by an ImGui table using standard flags
+    /// (Borders + SizingFixedFit). This accounts for cell padding on both sides of each column
+    /// and the 2px outer border. Does not include scrollbar — ImGui manages that internally
+    /// for ScrollY tables by shrinking content regions only when content overflows.
+    /// </summary>
+    /// <param name="totalColumns">Total number of visible columns (including any fixed columns like character).</param>
+    /// <returns>Estimated overhead in pixels.</returns>
+    public static float EstimateTableOverhead(int totalColumns)
+    {
+        var style = ImGui.GetStyle();
+        return style.CellPadding.X * 2 * totalColumns + 2f;
+    }
+    
+    /// <summary>
+    /// Calculates the width each data column should have to equally fill the remaining table space.
+    /// Subtracts fixed column widths and table overhead from available space, then divides equally.
+    /// </summary>
+    /// <param name="totalColumns">Total number of visible columns (fixed + data).</param>
+    /// <param name="dataColumnCount">Number of data columns to distribute space across.</param>
+    /// <param name="fixedColumnsWidth">Total width of fixed columns (e.g. character column). 0 if none.</param>
+    /// <param name="minWidth">Minimum width per column.</param>
+    /// <returns>Width per data column.</returns>
+    public static float CalculateFillWidthEqual(int totalColumns, int dataColumnCount, float fixedColumnsWidth, float minWidth = 30f)
+    {
+        if (dataColumnCount <= 0) return minWidth;
+        var availableWidth = ImGui.GetContentRegionAvail().X;
+        var overhead = EstimateTableOverhead(totalColumns);
+        var remaining = availableWidth - fixedColumnsWidth - overhead;
+        return Math.Max(minWidth, remaining / dataColumnCount);
+    }
+    
+    /// <summary>
+    /// Calculates the width a single data column should have to fill the remaining table space,
+    /// given the widths of all other data columns.
+    /// </summary>
+    /// <param name="totalColumns">Total number of visible columns (fixed + data).</param>
+    /// <param name="fixedColumnsWidth">Total width of fixed columns (e.g. character column). 0 if none.</param>
+    /// <param name="otherDataColumnsWidth">Sum of widths of all other data columns.</param>
+    /// <param name="minWidth">Minimum width for the column.</param>
+    /// <returns>Width for the target column.</returns>
+    public static float CalculateFillWidthSingle(int totalColumns, float fixedColumnsWidth, float otherDataColumnsWidth, float minWidth = 30f)
+    {
+        var availableWidth = ImGui.GetContentRegionAvail().X;
+        var overhead = EstimateTableOverhead(totalColumns);
+        var fillWidth = availableWidth - fixedColumnsWidth - otherDataColumnsWidth - overhead;
+        return Math.Max(minWidth, fillWidth);
+    }
+    
+    /// <summary>
     /// Formats a number using the specified format configuration.
     /// </summary>
     /// <param name="value">The value to format.</param>
